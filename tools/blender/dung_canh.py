@@ -59,7 +59,7 @@ sc.frame_start = 1
 sc.frame_end = SO_KHUNG
 sc.render.fps = 24
 sc.render.image_settings.file_format = "JPEG"
-sc.render.image_settings.quality = 82
+sc.render.image_settings.quality = 95
 sc.render.filepath = THU_MUC_RA.rstrip("/\\") + "/k_"
 sc.view_settings.view_transform = "AgX" if "AgX" in [v.identifier for v in sc.view_settings.bl_rna.properties["view_transform"].enum_items] else "Filmic"
 try:

@@ -1,125 +1,274 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Drawing.Drawing2D;
-using System.Drawing.Imaging;
+using System;
 using System.IO;
-using System.Text;
-using System.Windows.Forms;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Forms.Integration;
+using System.Windows.Media;
+using System.Windows.Media.Animation;
+using System.Windows.Media.Imaging;
+using WfColor = System.Drawing.Color;
 
 namespace XeBus_GIS.UI.Controls
 {
     /// <summary>
-    /// Vùng hình nền động của trang đăng nhập: phát lặp chuỗi khung hình JPEG (render bằng Blender từ dữ liệu CSDLKG –
-    /// tools/blender/dung_canh.py) rồi vẽ lớp phủ tối + nội dung giới thiệu hệ thống lên trên.
-    /// Tệp khung hình: Assets\nen_dangnhap.bin (định dạng "XBV1" · fps · số khung · [độ dài · byte JPEG]…).
-    /// Thiếu tệp → nền gradient tĩnh. Windows tắt hiệu ứng (UIEffects) → đứng yên ở khung đầu.
-    /// Khung chỉ được giải mã khi cần vẽ (giữ byte JPEG trong RAM, chỉ 2 bitmap đang dùng) để tốn ít bộ nhớ.
-    /// Tệp lưu ít khung/giây (12) cho nhẹ; khi phát, hai khung liền nhau được hoà trộn theo thời gian
-    /// (vẽ ~30 lần/giây) nên chuyển động vẫn mượt.
+    /// Vùng hình nền động của trang đăng nhập: phát lặp video MP4 (H.264, render bằng Blender từ dữ liệu CSDLKG –
+    /// tools/blender/dung_canh.py → dong_goi_video.ps1) bằng WPF MediaElement (giải mã/phóng to bằng GPU ⇒ mượt, nét
+    /// ở mọi tỉ lệ DPI), lớp phủ than chì và phần giới thiệu vẽ cùng trong WPF nên không bị "đè" như ActiveX.
+    /// Ảnh tĩnh (cùng tên, đuôi .jpg) hiện trong lúc mở video, khi Windows không phát được (thiếu Media Feature Pack)
+    /// hoặc khi người dùng tắt hiệu ứng của Windows. Tạm dừng khi cửa sổ thu nhỏ.
     /// </summary>
-    public class NenVideo : Control
+    public class NenVideo : System.Windows.Forms.Control
     {
-        private readonly List<byte[]> _khung = new List<byte[]>();
-        private readonly Timer _timer = new Timer { Interval = 33 };
-        private readonly System.Diagnostics.Stopwatch _dongHo = new System.Diagnostics.Stopwatch();
-        private int _fps = 12;
-        private int _chiSo = -1;          // khung A đang giải mã
-        private Image _anh, _anhSau;      // khung A và khung kế tiếp B
-        private float _tron;              // 0..1: tỉ lệ hoà khung B lên khung A
+        private readonly ElementHost _host;
+        private readonly Grid _goc = new Grid { ClipToBounds = true };
+        private readonly MediaElement _video = new MediaElement { Stretch = Stretch.UniformToFill, IsMuted = true, Opacity = 0 };
+        private readonly Image _anhTinh = new Image { Stretch = Stretch.UniformToFill };
+        private MediaClock _dongHo;
 
-        public string TieuDe { get; set; } = "XeBus GIS";
-        public string Slogan { get; set; } = "";
-        public string MoTa { get; set; } = "";
-        /// <summary>Số liệu thật (vd "1.258 trạm · 6 tuyến · 126 phường/xã"); rỗng = không vẽ.</summary>
-        public string SoLieu { get => _soLieu; set { _soLieu = value; Invalidate(); } }
-        private string _soLieu = "";
-        public string ChuThichNguon { get; set; } = "";
-        public (string icon, string ten, string moTa)[] TinhNang { get; set; } = new (string, string, string)[0];
+        private readonly TextBlock _tbTieuDe = Chu(19, FontWeights.SemiBold);
+        private readonly TextBlock _tbSlogan = Chu(36, FontWeights.SemiBold);
+        private readonly TextBlock _tbMoTa = Chu(15.5, FontWeights.Normal, 0.85);
+        private readonly StackPanel _spTinhNang = new StackPanel { Margin = new Thickness(0, 26, 0, 0) };
+        private readonly Border _bdSoLieu = new Border
+        {
+            BorderBrush = new SolidColorBrush(Color.FromArgb(70, 255, 255, 255)),
+            BorderThickness = new Thickness(0, 1, 0, 0),
+            Padding = new Thickness(0, 14, 0, 0),
+            Margin = new Thickness(0, 10, 0, 0),
+            Visibility = Visibility.Collapsed,
+        };
+        private readonly TextBlock _tbSoLieu = Chu(15, FontWeights.SemiBold);
+        private readonly TextBlock _tbNguon = Chu(11.5, FontWeights.Normal, 0.6);
 
         public NenVideo()
         {
-            SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer |
-                     ControlStyles.ResizeRedraw | ControlStyles.UserPaint, true);
-            BackColor = ColorTranslator.FromHtml("#08131B");
-            _timer.Tick += (s, e) =>
-            {
-                if (_khung.Count == 0) return;
-                double vt = _dongHo.Elapsed.TotalSeconds * _fps;
-                int a = (int)Math.Floor(vt) % _khung.Count;
-                _tron = (float)(vt - Math.Floor(vt));
-                if (a != _chiSo) DatKhung(a);
-                Invalidate();
-            };
+            BackColor = WfColor.FromArgb(17, 24, 39);
+            _host = new ElementHost { Dock = System.Windows.Forms.DockStyle.Fill, BackColorTransparent = false };
+            _host.Child = DungNoiDung();
+            Controls.Add(_host);
         }
 
-        /// <summary>Nạp tệp khung hình; trả false nếu không có/lỗi (khi đó vẽ nền tĩnh).</summary>
-        public bool Nap(string duongDan)
+        // ------------------------------------------------------------------ thuộc tính nội dung
+        public string TieuDe { get => _tbTieuDe.Text; set => _tbTieuDe.Text = value; }
+        public string Slogan { get => _tbSlogan.Text; set => _tbSlogan.Text = value; }
+        public string MoTa { get => _tbMoTa.Text; set => _tbMoTa.Text = value; }
+        public string ChuThichNguon { get => _tbNguon.Text; set => _tbNguon.Text = value; }
+
+        /// <summary>Số liệu thật (vd "1.258 trạm · 6 tuyến · 126 phường/xã"); rỗng = ẩn dòng này.</summary>
+        public string SoLieu
         {
+            get => _tbSoLieu.Text;
+            set
+            {
+                _tbSoLieu.Text = value ?? "";
+                _bdSoLieu.Visibility = string.IsNullOrEmpty(value) ? Visibility.Collapsed : Visibility.Visible;
+            }
+        }
+
+        private (string icon, string ten, string moTa)[] _tinhNang = new (string, string, string)[0];
+        public (string icon, string ten, string moTa)[] TinhNang
+        {
+            get => _tinhNang;
+            set
+            {
+                _tinhNang = value ?? new (string, string, string)[0];
+                _spTinhNang.Children.Clear();
+                foreach (var (icon, ten, moTa) in _tinhNang) _spTinhNang.Children.Add(DongTinhNang(icon, ten, moTa));
+            }
+        }
+
+        // ------------------------------------------------------------------ dựng giao diện WPF
+        private static TextBlock Chu(double co, FontWeight dam, double doDuc = 1)
+        {
+            var t = new TextBlock
+            {
+                FontFamily = new FontFamily("Segoe UI"),
+                FontSize = co,
+                FontWeight = dam,
+                Foreground = Brushes.White,
+                Opacity = doDuc,
+                TextWrapping = TextWrapping.Wrap,
+            };
+            TextOptions.SetTextFormattingMode(t, TextFormattingMode.Display);
+            return t;
+        }
+
+        private static FontFamily FontIcon => new FontFamily(Theme.TenFontIcon);
+
+        private static Color Wpf(WfColor c, byte? a = null) => Color.FromArgb(a ?? c.A, c.R, c.G, c.B);
+
+        private UIElement DungNoiDung()
+        {
+            var phu = Wpf(Theme.DnPhu, 255);
+            _goc.Background = new SolidColorBrush(phu);
+
+            // 1. ảnh tĩnh + video (phủ kín, căn giữa)
+            _goc.Children.Add(_anhTinh);
+            _goc.Children.Add(_video);
+
+            // 2. lớp phủ than chì: đậm ở mép trái + đáy (nơi đặt chữ), nhạt dần sang phải; dải mờ ở trên cho logo
+            _goc.Children.Add(new System.Windows.Shapes.Rectangle
+            {
+                Fill = new LinearGradientBrush(new GradientStopCollection
+                {
+                    new GradientStop(Color.FromArgb(205, phu.R, phu.G, phu.B), 0),
+                    new GradientStop(Color.FromArgb(120, phu.R, phu.G, phu.B), 0.45),
+                    new GradientStop(Color.FromArgb(0, phu.R, phu.G, phu.B), 0.85),
+                }, 0),
+            });
+            _goc.Children.Add(new System.Windows.Shapes.Rectangle
+            {
+                Fill = new LinearGradientBrush(new GradientStopCollection
+                {
+                    new GradientStop(Color.FromArgb(110, phu.R, phu.G, phu.B), 0),
+                    new GradientStop(Color.FromArgb(0, phu.R, phu.G, phu.B), 0.16),
+                    new GradientStop(Color.FromArgb(0, phu.R, phu.G, phu.B), 0.45),
+                    new GradientStop(Color.FromArgb(190, phu.R, phu.G, phu.B), 1),
+                }, 90),
+            });
+
+            // 3. nội dung
+            var noiDung = new Grid { Margin = new Thickness(56, 36, 56, 28) };
+            noiDung.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            noiDung.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+            noiDung.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            noiDung.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+
+            // logo + tên
+            var hangLogo = new StackPanel { Orientation = Orientation.Horizontal };
+            var logo = new Border
+            {
+                Width = 42, Height = 42, CornerRadius = new CornerRadius(10), Background = Brushes.White,
+                Child = new TextBlock
+                {
+                    Text = Icons.Bus, FontFamily = FontIcon, FontSize = 21,
+                    Foreground = new SolidColorBrush(Wpf(Theme.DnNhan)),
+                    HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center,
+                },
+            };
+            hangLogo.Children.Add(logo);
+            _tbTieuDe.Margin = new Thickness(12, 0, 0, 0);
+            _tbTieuDe.VerticalAlignment = VerticalAlignment.Center;
+            hangLogo.Children.Add(_tbTieuDe);
+            Grid.SetRow(hangLogo, 0);
+            noiDung.Children.Add(hangLogo);
+
+            // khối giới thiệu (đáy trái, rộng tối đa 640)
+            var gioiThieu = new StackPanel { MaxWidth = 640, HorizontalAlignment = HorizontalAlignment.Left };
+            _tbSlogan.LineHeight = 44;
+            gioiThieu.Children.Add(_tbSlogan);
+            _tbMoTa.Margin = new Thickness(0, 14, 0, 0);
+            _tbMoTa.LineHeight = 23;
+            gioiThieu.Children.Add(_tbMoTa);
+            gioiThieu.Children.Add(_spTinhNang);
+            _bdSoLieu.Child = _tbSoLieu;
+            gioiThieu.Children.Add(_bdSoLieu);
+            Grid.SetRow(gioiThieu, 2);
+            noiDung.Children.Add(gioiThieu);
+
+            _tbNguon.Margin = new Thickness(0, 26, 0, 0);
+            _tbNguon.TextTrimming = TextTrimming.CharacterEllipsis;
+            _tbNguon.TextWrapping = TextWrapping.NoWrap;
+            Grid.SetRow(_tbNguon, 3);
+            noiDung.Children.Add(_tbNguon);
+            _goc.Children.Add(noiDung);
+
+            // cỡ chữ tiêu đề theo bề rộng vùng
+            _goc.SizeChanged += (s, e) =>
+            {
+                bool hep = e.NewSize.Width < 820;
+                _tbSlogan.FontSize = hep ? 28 : 36;
+                _tbSlogan.LineHeight = hep ? 35 : 44;
+                noiDung.Margin = hep ? new Thickness(36, 28, 36, 22) : new Thickness(56, 36, 56, 28);
+            };
+            return _goc;
+        }
+
+        private static UIElement DongTinhNang(string icon, string ten, string moTa)
+        {
+            var hang = new Grid { Margin = new Thickness(0, 0, 0, 14) };
+            hang.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(52) });
+            hang.ColumnDefinitions.Add(new ColumnDefinition());
+            var o = new Border
+            {
+                Width = 38, Height = 38, CornerRadius = new CornerRadius(9), HorizontalAlignment = HorizontalAlignment.Left,
+                Background = new SolidColorBrush(Color.FromArgb(40, 255, 255, 255)),
+                BorderBrush = new SolidColorBrush(Color.FromArgb(70, 255, 255, 255)),
+                BorderThickness = new Thickness(1),
+                Child = new TextBlock
+                {
+                    Text = icon, FontFamily = FontIcon, FontSize = 17, Foreground = Brushes.White,
+                    HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center,
+                },
+            };
+            hang.Children.Add(o);
+            var chu = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+            chu.Children.Add(Chu(14.5, FontWeights.SemiBold));
+            ((TextBlock)chu.Children[0]).Text = ten;
+            var tbMoTa = Chu(12.5, FontWeights.Normal, 0.8);
+            tbMoTa.Text = moTa;
+            tbMoTa.Margin = new Thickness(0, 2, 0, 0);
+            chu.Children.Add(tbMoTa);
+            Grid.SetColumn(chu, 1);
+            hang.Children.Add(chu);
+            return hang;
+        }
+
+        // ------------------------------------------------------------------ phát video
+        /// <summary>
+        /// Nạp video (mp4) và ảnh tĩnh cùng tên (.jpg). Trả false nếu thiếu cả hai (khi đó chỉ có nền than chì).
+        /// </summary>
+        public bool Nap(string duongDanVideo)
+        {
+            var anh = Path.ChangeExtension(duongDanVideo, ".jpg");
+            bool coAnh = File.Exists(anh);
+            if (coAnh)
+            {
+                try
+                {
+                    var bmp = new BitmapImage();
+                    bmp.BeginInit();
+                    bmp.CacheOption = BitmapCacheOption.OnLoad;
+                    bmp.UriSource = new Uri(anh, UriKind.Absolute);
+                    bmp.EndInit();
+                    bmp.Freeze();
+                    _anhTinh.Source = bmp;
+                }
+                catch { coAnh = false; }
+            }
+
+            if (!File.Exists(duongDanVideo)) return coAnh;
+            // người dùng tắt hiệu ứng của Windows ⇒ chỉ ảnh tĩnh
+            if (!System.Windows.Forms.SystemInformation.UIEffectsEnabled) return true;
+
             try
             {
-                if (!File.Exists(duongDan)) return false;
-                using (var br = new BinaryReader(File.OpenRead(duongDan)))
-                {
-                    if (Encoding.ASCII.GetString(br.ReadBytes(4)) != "XBV1") return false;
-                    int fps = br.ReadInt32(), so = br.ReadInt32();
-                    for (int i = 0; i < so; i++) _khung.Add(br.ReadBytes(br.ReadInt32()));
-                    _fps = Math.Max(1, fps);
-                }
-                DatKhung(0);
+                var tl = new MediaTimeline(new Uri(duongDanVideo, UriKind.Absolute)) { RepeatBehavior = RepeatBehavior.Forever };
+                _dongHo = tl.CreateClock();
+                _video.MediaOpened += (s, e) =>
+                    _video.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation(1, TimeSpan.FromMilliseconds(400)));
+                _video.MediaFailed += (s, e) => _video.Visibility = Visibility.Collapsed; // giữ ảnh tĩnh
+                _video.Clock = _dongHo;
                 CapNhatPhat();
-                return _khung.Count > 0;
+                return true;
             }
             catch
             {
-                _khung.Clear();
-                return false;
+                _video.Visibility = Visibility.Collapsed;
+                return coAnh;
             }
         }
 
-        private Image GiaiMa(int chiSo)
-        {
-            try
-            {
-                using (var ms = new MemoryStream(_khung[chiSo]))
-                using (var tam = Image.FromStream(ms))
-                    return new Bitmap(tam);
-            }
-            catch { return null; }
-        }
+        private bool _dangDung;
 
-        /// <summary>Đặt khung A = chiSo, B = khung kế (tái dùng bitmap B cũ khi đi tới tuần tự).</summary>
-        private void DatKhung(int chiSo)
-        {
-            if (_khung.Count == 0) return;
-            int sau = (chiSo + 1) % _khung.Count;
-            Image moiA, moiB;
-            if (_chiSo >= 0 && chiSo == (_chiSo + 1) % _khung.Count && _anhSau != null)
-            {
-                moiA = _anhSau;
-                _anh?.Dispose();
-            }
-            else
-            {
-                moiA = GiaiMa(chiSo);
-                _anh?.Dispose();
-                _anhSau?.Dispose();
-            }
-            moiB = _khung.Count > 1 ? GiaiMa(sau) : null;
-            _anh = moiA;
-            _anhSau = moiB;
-            _chiSo = chiSo;
-        }
-
-        /// <summary>Chỉ phát khi đang hiển thị, cửa sổ không thu nhỏ và Windows bật hiệu ứng.</summary>
+        /// <summary>Tạm dừng khi cửa sổ thu nhỏ / control ẩn, phát tiếp khi hiện lại.</summary>
         private void CapNhatPhat()
         {
+            if (_dongHo == null) return;
             var f = FindForm();
-            bool phat = _khung.Count > 1 && Visible && IsHandleCreated
-                        && SystemInformation.UIEffectsEnabled
-                        && (f == null || f.WindowState != FormWindowState.Minimized);
-            if (phat && !_timer.Enabled) { _dongHo.Start(); _timer.Start(); }
-            else if (!phat && _timer.Enabled) { _timer.Stop(); _dongHo.Stop(); }
+            bool phat = Visible && (f == null || f.WindowState != System.Windows.Forms.FormWindowState.Minimized);
+            if (!phat && !_dangDung) { _dongHo.Controller.Pause(); _dangDung = true; }
+            else if (phat && _dangDung) { _dongHo.Controller.Resume(); _dangDung = false; }
         }
 
         protected override void OnHandleCreated(EventArgs e)
@@ -127,7 +276,6 @@ namespace XeBus_GIS.UI.Controls
             base.OnHandleCreated(e);
             var f = FindForm();
             if (f != null) f.Resize += (s, ev) => CapNhatPhat();
-            CapNhatPhat();
         }
 
         protected override void OnVisibleChanged(EventArgs e)
@@ -136,130 +284,13 @@ namespace XeBus_GIS.UI.Controls
             CapNhatPhat();
         }
 
-        protected override void OnPaint(PaintEventArgs e)
-        {
-            var g = e.Graphics;
-            var r = ClientRectangle;
-            if (r.Width <= 0 || r.Height <= 0) return;
-
-            // 1. hình nền: phủ kín (cover), căn giữa
-            if (_anh != null)
-            {
-                float tl = Math.Max((float)r.Width / _anh.Width, (float)r.Height / _anh.Height);
-                int w = (int)Math.Ceiling(_anh.Width * tl), h = (int)Math.Ceiling(_anh.Height * tl);
-                g.InterpolationMode = InterpolationMode.Bilinear;
-                g.PixelOffsetMode = PixelOffsetMode.Half;
-                var dich = new Rectangle((r.Width - w) / 2, (r.Height - h) / 2, w, h);
-                g.DrawImage(_anh, dich);
-                if (_anhSau != null && _tron > 0.02f && _timer.Enabled)
-                    using (var ia = new ImageAttributes())
-                    {
-                        ia.SetColorMatrix(new ColorMatrix { Matrix33 = _tron });
-                        g.DrawImage(_anhSau, dich, 0, 0, _anhSau.Width, _anhSau.Height, GraphicsUnit.Pixel, ia);
-                    }
-                g.PixelOffsetMode = PixelOffsetMode.Default;
-            }
-            else
-            {
-                using (var br = new LinearGradientBrush(r, ColorTranslator.FromHtml("#0B2530"), ColorTranslator.FromHtml("#071018"), 60f))
-                    g.FillRectangle(br, r);
-            }
-
-            // 2. lớp phủ than chì (trung tính) để chữ trắng đủ tương phản: đậm ở mép trái + đáy (nơi đặt chữ),
-            //    nhạt dần sang phải để vẫn thấy rõ sa bàn
-            var p = Theme.DnPhu;
-            var rTrai = new Rectangle(0, 0, Math.Max(1, r.Width * 4 / 5), r.Height);
-            using (var br = new LinearGradientBrush(rTrai, Color.FromArgb(205, p), Color.FromArgb(0, p), 0f))
-                g.FillRectangle(br, rTrai);
-            var rDuoi = new Rectangle(0, r.Height * 2 / 5, r.Width, r.Height - r.Height * 2 / 5 + 1);
-            using (var br = new LinearGradientBrush(rDuoi, Color.FromArgb(0, p), Color.FromArgb(185, p), 90f))
-                g.FillRectangle(br, rDuoi);
-            using (var br = new LinearGradientBrush(new Rectangle(0, 0, r.Width, UiHelper.Dp(120)), Color.FromArgb(120, p), Color.FromArgb(0, p), 90f))
-                g.FillRectangle(br, 0, 0, r.Width, UiHelper.Dp(120));
-
-            VeNoiDung(g, r);
-        }
-
-        private void VeNoiDung(Graphics g, Rectangle r)
-        {
-            g.SmoothingMode = SmoothingMode.AntiAlias;
-            g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
-            int le = Math.Max(UiHelper.Dp(40), r.Width / 14);
-            int rong = Math.Min(r.Width - 2 * le, UiHelper.Dp(620));
-            var trang = Color.White;
-            var phu = Color.FromArgb(205, 226, 232, 240);
-            var flags = TextFormatFlags.NoPrefix | TextFormatFlags.WordBreak | TextFormatFlags.Left;
-
-            // logo + tên ở góc trên
-            int o = UiHelper.Dp(40), y = UiHelper.Dp(36);
-            var rLogo = new Rectangle(le, y, o, o);
-            using (var path = UiHelper.DuongBoGoc(rLogo, UiHelper.Dp(9)))
-            using (var br = new SolidBrush(trang))
-                g.FillPath(br, path);
-            using (var f = Theme.FontIcon(16f))
-                TextRenderer.DrawText(g, Icons.Bus, f, rLogo, Theme.DnNhan, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix);
-            using (var f = new Font("Segoe UI Semibold", 14f))
-                TextRenderer.DrawText(g, TieuDe, f, new Rectangle(rLogo.Right + UiHelper.Dp(12), y, rong, o), trang,
-                    TextFormatFlags.NoPrefix | TextFormatFlags.VerticalCenter | TextFormatFlags.Left);
-
-            // khối giới thiệu ở nửa dưới
-            using (var fTieuDe = new Font("Segoe UI Semibold", r.Width > UiHelper.Dp(900) ? 28f : 22f))
-            using (var fMoTa = new Font("Segoe UI", 11.25f))
-            using (var fTen = new Font("Segoe UI Semibold", 10.5f))
-            using (var fIcon = Theme.FontIcon(15f))
-            {
-                int hSlogan = TextRenderer.MeasureText(g, Slogan, fTieuDe, new Size(rong, 0), flags).Height;
-                int hMoTa = TextRenderer.MeasureText(g, MoTa, fMoTa, new Size(rong, 0), flags).Height;
-                int hTinhNang = TinhNang.Length * UiHelper.Dp(52);
-                int hSoLieu = string.IsNullOrEmpty(SoLieu) ? 0 : UiHelper.Dp(44);
-                int tong = hSlogan + UiHelper.Dp(14) + hMoTa + UiHelper.Dp(28) + hTinhNang + hSoLieu;
-                y = Math.Max(rLogo.Bottom + UiHelper.Dp(40), r.Height - UiHelper.Dp(72) - tong);
-
-                TextRenderer.DrawText(g, Slogan, fTieuDe, new Rectangle(le, y, rong, hSlogan), trang, flags);
-                y += hSlogan + UiHelper.Dp(14);
-                TextRenderer.DrawText(g, MoTa, fMoTa, new Rectangle(le, y, rong, hMoTa), phu, flags);
-                y += hMoTa + UiHelper.Dp(28);
-
-                foreach (var (icon, ten, moTa) in TinhNang)
-                {
-                    var rIcon = new Rectangle(le, y, UiHelper.Dp(36), UiHelper.Dp(36));
-                    using (var path = UiHelper.DuongBoGoc(rIcon, UiHelper.Dp(8)))
-                    using (var br = new SolidBrush(Color.FromArgb(38, 255, 255, 255)))
-                    using (var pen = new Pen(Color.FromArgb(60, 255, 255, 255)))
-                    {
-                        g.FillPath(br, path);
-                        g.DrawPath(pen, path);
-                    }
-                    TextRenderer.DrawText(g, icon, fIcon, rIcon, trang,
-                        TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix);
-                    int x = rIcon.Right + UiHelper.Dp(14);
-                    TextRenderer.DrawText(g, ten, fTen, new Rectangle(x, y - UiHelper.Dp(1), rong - x + le, UiHelper.Dp(20)), trang, TextFormatFlags.NoPrefix | TextFormatFlags.Left);
-                    TextRenderer.DrawText(g, moTa, Theme.FontNhan, new Rectangle(x, y + UiHelper.Dp(19), rong - x + le, UiHelper.Dp(20)), phu,
-                        TextFormatFlags.NoPrefix | TextFormatFlags.Left | TextFormatFlags.EndEllipsis);
-                    y += UiHelper.Dp(52);
-                }
-
-                if (hSoLieu > 0)
-                {
-                    y += UiHelper.Dp(4);
-                    using (var pen = new Pen(Color.FromArgb(70, 255, 255, 255)))
-                        g.DrawLine(pen, le, y, le + rong, y);
-                    TextRenderer.DrawText(g, SoLieu, fTen, new Rectangle(le, y + UiHelper.Dp(12), rong, UiHelper.Dp(24)), trang, TextFormatFlags.NoPrefix | TextFormatFlags.Left);
-                }
-            }
-
-            if (!string.IsNullOrEmpty(ChuThichNguon))
-                TextRenderer.DrawText(g, ChuThichNguon, Theme.FontNho, new Rectangle(le, r.Height - UiHelper.Dp(36), r.Width - 2 * le, UiHelper.Dp(20)),
-                    Color.FromArgb(150, 226, 232, 240), TextFormatFlags.NoPrefix | TextFormatFlags.Left | TextFormatFlags.EndEllipsis);
-        }
-
         protected override void Dispose(bool disposing)
         {
             if (disposing)
             {
-                _timer.Dispose();
-                _anh?.Dispose();
-                _anhSau?.Dispose();
+                try { _dongHo?.Controller.Stop(); } catch { }
+                _video.Clock = null;
+                _host.Dispose();
             }
             base.Dispose(disposing);
         }

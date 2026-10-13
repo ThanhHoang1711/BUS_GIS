@@ -48,7 +48,7 @@ namespace XeBus_GIS.Forms
                           + "dựa trên dân số, công trình thu hút chuyến đi.";
             nenVideo.TinhNang = TinhNang;
             nenVideo.ChuThichNguon = "Hình nền: mô hình 3D dựng từ dữ liệu CSDLKG (nhà, mặt nước, tuyến, trạm) · © OpenStreetMap contributors";
-            nenVideo.Nap(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "nen_dangnhap.bin"));
+            nenVideo.Nap(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "nen_dangnhap.mp4"));
 
             // bên phải: cột đăng nhập, khối form luôn căn giữa
             pnlForm.BackColor = Theme.Surface;
