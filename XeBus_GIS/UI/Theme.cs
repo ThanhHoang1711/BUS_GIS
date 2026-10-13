@@ -11,32 +11,36 @@ namespace XeBus_GIS.UI
     public static class Theme
     {
         // ---- Màu giao diện ----
-        public static readonly Color Primary = ColorTranslator.FromHtml("#172033");       // chữ tiêu đề / nhấn đậm
+        public static readonly Color Primary = ColorTranslator.FromHtml("#0F172A");       // chữ tiêu đề / nhấn đậm
         public static readonly Color Secondary = ColorTranslator.FromHtml("#334155");     // chữ nút phụ
-        public static readonly Color Accent = ColorTranslator.FromHtml("#2563EB");        // hành động chính
-        public static readonly Color AccentHover = ColorTranslator.FromHtml("#1D4ED8");
-        public static readonly Color AccentPressed = ColorTranslator.FromHtml("#1E40AF");
-        public static readonly Color AccentSoft = ColorTranslator.FromHtml("#EAF1FE");    // nền mục đang chọn
-        public static readonly Color AccentSoftHover = ColorTranslator.FromHtml("#DCE7FD");
-        public static readonly Color Accent2 = ColorTranslator.FromHtml("#06B6D4");       // vùng phục vụ / biểu đồ phụ
+        public static readonly Color Accent = ColorTranslator.FromHtml("#0F766E");        // hành động chính
+        public static readonly Color AccentHover = ColorTranslator.FromHtml("#115E59");
+        public static readonly Color AccentPressed = ColorTranslator.FromHtml("#134E4A");
+        public static readonly Color AccentSoft = ColorTranslator.FromHtml("#E6F4F1");    // nền mục đang chọn
+        public static readonly Color AccentSoftHover = ColorTranslator.FromHtml("#D1EBE6");
+        public static readonly Color Accent2 = ColorTranslator.FromHtml("#0EA5E9");       // vùng phục vụ / biểu đồ phụ
         public static readonly Color Highlight = ColorTranslator.FromHtml("#F97316");     // trạm đề xuất / ứng viên
         public static readonly Color Success = ColorTranslator.FromHtml("#16A34A");
         public static readonly Color Warning = ColorTranslator.FromHtml("#F59E0B");
         public static readonly Color WarningText = ColorTranslator.FromHtml("#B45309");
         public static readonly Color Danger = ColorTranslator.FromHtml("#DC2626");
         public static readonly Color DangerHover = ColorTranslator.FromHtml("#B91C1C");
-        public static readonly Color Background = ColorTranslator.FromHtml("#F5F7FB");
+        public static readonly Color Background = ColorTranslator.FromHtml("#F4F6F8");
         public static readonly Color Surface = Color.White;
-        public static readonly Color SurfaceAlt = ColorTranslator.FromHtml("#F8FAFC");    // header lưới, vùng phụ
-        public static readonly Color Border = ColorTranslator.FromHtml("#E2E8F0");
-        public static readonly Color BorderStrong = ColorTranslator.FromHtml("#CBD5E1");
-        public static readonly Color Text = ColorTranslator.FromHtml("#172033");
-        public static readonly Color Muted = ColorTranslator.FromHtml("#64748B");
+        public static readonly Color SurfaceAlt = ColorTranslator.FromHtml("#F8FAFB");    // header lưới, vùng phụ
+        public static readonly Color Border = ColorTranslator.FromHtml("#E2E7EC");
+        public static readonly Color BorderStrong = ColorTranslator.FromHtml("#CAD2DA");
+        public static readonly Color Text = ColorTranslator.FromHtml("#0F172A");
+        public static readonly Color Muted = ColorTranslator.FromHtml("#475569");
         public static readonly Color Disabled = ColorTranslator.FromHtml("#94A3B8");
-        public static readonly Color RowAlt = ColorTranslator.FromHtml("#FAFBFD");
+        public static readonly Color RowAlt = ColorTranslator.FromHtml("#FAFBFC");
         public static readonly Color RowSelect = AccentSoft;
-        public static readonly Color HeaderHover = ColorTranslator.FromHtml("#F1F5F9");
-        public static readonly Color SurfaceHover = ColorTranslator.FromHtml("#F1F5F9");
+        public static readonly Color HeaderHover = ColorTranslator.FromHtml("#F1F4F7");
+        // ---- Thanh bên (tông nền riêng, đậm hơn vùng làm việc một bậc – như Claude.ai) ----
+        public static readonly Color Sidebar = ColorTranslator.FromHtml("#EEF2F5");
+        public static readonly Color SidebarHover = ColorTranslator.FromHtml("#E2E8ED");
+        public static readonly Color SidebarChon = ColorTranslator.FromHtml("#DCEFEA");      // mục đang chọn
+        public static readonly Color SurfaceHover = ColorTranslator.FromHtml("#F1F4F7");
 
         // ---- Màu ký hiệu bản đồ (mang nghĩa nghiệp vụ – giữ ổn định) ----
         public static readonly Color MapTram = Accent;

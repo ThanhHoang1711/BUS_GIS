@@ -155,10 +155,10 @@ namespace XeBus_GIS.UI
             if (!b.Enabled)
             {
                 bool chinh = t.Kieu == KieuNut.Chinh || t.Kieu == KieuNut.NguyHiemChinh;
-                b.BackColor = chinh ? Theme.BorderStrong : (t.Kieu == KieuNut.Icon ? t.Nen : Theme.SurfaceAlt);
-                b.ForeColor = chinh ? Color.White : Theme.Disabled;
-                b.FlatAppearance.BorderColor = t.DoDayVien > 0 ? Theme.Border : b.BackColor;
-                b.FlatAppearance.BorderSize = t.DoDayVien;
+                b.BackColor = chinh ? Theme.SurfaceHover : (t.Kieu == KieuNut.Icon ? t.Nen : Theme.SurfaceAlt);
+                b.ForeColor = Theme.Disabled;
+                b.FlatAppearance.BorderColor = chinh || t.DoDayVien > 0 ? Theme.Border : b.BackColor;
+                b.FlatAppearance.BorderSize = chinh ? 1 : t.DoDayVien;
                 b.Cursor = Cursors.Default;
                 return;
             }

@@ -125,7 +125,7 @@ namespace XeBus_GIS.Map
             });
             DangKy(Tram, "Trạm xe buýt", ShpfileType.SHP_POINT, BanDoRepository.SqlTram, sf =>
             {
-                KieuDiem(sf.DefaultDrawingOptions, Theme.Accent, 8, tkDefaultPointSymbol.dpsCircle);
+                KieuDiem(sf.DefaultDrawingOptions, Theme.MapTram, 7, tkDefaultPointSymbol.dpsCircle);
                 ThemLoaiDiem(sf, "Bến xe", "BX", Theme.MapBenXe, 11, tkDefaultPointSymbol.dpsSquare);
                 ThemLoaiDiem(sf, "Đề xuất", "DX", Theme.MapTramDeXuat, 10, tkDefaultPointSymbol.dpsCircle);
                 ThemLoaiDiem(sf, "Ngừng hoạt động", "NG", Theme.MapTramNgung, 7, tkDefaultPointSymbol.dpsCircle);
@@ -138,7 +138,7 @@ namespace XeBus_GIS.Map
             o.PointSize = coDiem;
             o.FillColor = Theme.Ole(mau);
             o.LineColor = Theme.Ole(Color.White);
-            o.LineWidth = 1.5f;
+            o.LineWidth = 1f;
             o.LineVisible = true;
         }
 

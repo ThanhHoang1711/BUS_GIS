@@ -20,8 +20,10 @@ namespace XeBus_GIS.UI.Controls
     }
 
     /// <summary>
-    /// Thanh điều hướng bên trái (tự vẽ): thương hiệu, các nhóm mục có icon, mục đang chọn nền xanh nhạt + vạch trái,
+    /// Thanh điều hướng bên trái (tự vẽ): thương hiệu, các nhóm mục có icon, mục đang chọn nền nhấn + vạch trái,
     /// hover / focus bàn phím (↑ ↓ Enter), thu gọn 220 ↔ 56 px có chuyển động ngắn, tooltip khi thu gọn.
+    /// Nút thu/mở nằm ở góc trên như Claude.ai: khi mở là nút cạnh tên ứng dụng; khi thu gọn, di chuột lên logo
+    /// thì logo đổi thành nút mở rộng.
     /// </summary>
     public class ThanhDieuHuong : Control
     {
@@ -29,7 +31,7 @@ namespace XeBus_GIS.UI.Controls
         private readonly ToolTip _tip = new ToolTip { InitialDelay = 250 };
         private readonly Timer _timer = new Timer { Interval = 15 };
         private string _khoaChon;
-        private int _hover = -1;       // chỉ số mục đang hover; -2 = nút thu gọn
+        private int _hover = -1;       // chỉ số mục đang hover; -2 = nút thu/mở
         private int _focus = -1;       // chỉ số mục focus bằng bàn phím
         private bool _focusBanPhim;
         private bool _thuGon;
@@ -42,7 +44,6 @@ namespace XeBus_GIS.UI.Controls
         private int CaoThuongHieu => UiHelper.Dp(64);
         private int CaoMuc => UiHelper.Dp(40);
         private int CaoNhom => UiHelper.Dp(30);
-        private int CaoNutThu => UiHelper.Dp(44);
 
         /// <summary>Người dùng chọn một mục (khoá).</summary>
         public event Action<string> MucDuocChon;
@@ -57,7 +58,7 @@ namespace XeBus_GIS.UI.Controls
         {
             SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer |
                      ControlStyles.ResizeRedraw | ControlStyles.UserPaint | ControlStyles.Selectable, true);
-            BackColor = Theme.Surface;
+            BackColor = Theme.Sidebar;
             Width = RongMo;
             TabStop = true;
             _timer.Tick += Tick;
@@ -135,7 +136,19 @@ namespace XeBus_GIS.UI.Controls
             }
         }
 
-        private Rectangle VungNutThu => new Rectangle(UiHelper.Dp(8), Height - CaoNutThu - UiHelper.Dp(8), Width - UiHelper.Dp(16), CaoNutThu);
+        private int CoLogo => UiHelper.Dp(34);
+        private Rectangle VungLogo => new Rectangle(UiHelper.Dp(11), (CaoThuongHieu - CoLogo) / 2, CoLogo, CoLogo);
+
+        /// <summary>Nút thu/mở: khi mở là ô 32 px sát mép phải đầu thanh; khi thu gọn là chính ô logo.</summary>
+        private Rectangle VungNutThu
+        {
+            get
+            {
+                if (DangGon) return Rectangle.Inflate(VungLogo, UiHelper.Dp(2), UiHelper.Dp(2));
+                int o = UiHelper.Dp(32);
+                return new Rectangle(Width - UiHelper.Dp(10) - o, (CaoThuongHieu - o) / 2, o, o);
+            }
+        }
 
         private List<MucDieuHuong> MucHien => _muc.Where(m => m.Hien).ToList();
 
@@ -154,21 +167,44 @@ namespace XeBus_GIS.UI.Controls
                 g.DrawLine(pen, Width - 1, 0, Width - 1, Height);
 
             // thương hiệu: ô vuông bo góc màu Accent chứa icon xe buýt
-            int o = UiHelper.Dp(34);
-            var rLogo = new Rectangle(UiHelper.Dp(11), (CaoThuongHieu - o) / 2, o, o);
-            using (var path = UiHelper.DuongBoGoc(rLogo, UiHelper.Dp(8)))
-            using (var br = new SolidBrush(Theme.Accent))
-                g.FillPath(br, path);
-            using (var f = Theme.FontIcon(14f))
-                TextRenderer.DrawText(g, Icons.Bus, f, rLogo, Color.White, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix);
+            var rLogo = VungLogo;
+            var rNut = VungNutThu;
+            bool hoverNut = _hover == -2;
+            if (gon && hoverNut)
+            {
+                // thu gọn + di chuột lên logo: logo đổi thành nút mở rộng (như Claude.ai)
+                using (var path = UiHelper.DuongBoGoc(rNut, Theme.BoGoc))
+                using (var br = new SolidBrush(Theme.SidebarHover))
+                    g.FillPath(br, path);
+                using (var f = Theme.FontIcon(13f))
+                    TextRenderer.DrawText(g, Icons.MoThanhBen, f, rNut, Theme.Text, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix);
+            }
+            else
+            {
+                using (var path = UiHelper.DuongBoGoc(rLogo, UiHelper.Dp(8)))
+                using (var br = new SolidBrush(Theme.Accent))
+                    g.FillPath(br, path);
+                using (var f = Theme.FontIcon(14f))
+                    TextRenderer.DrawText(g, Icons.Bus, f, rLogo, Color.White, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix);
+            }
             if (!gon)
             {
                 int x = rLogo.Right + UiHelper.Dp(10);
-                TextRenderer.DrawText(g, TieuDe, Theme.FontAppTitle, new Point(x, rLogo.Top - UiHelper.Dp(3)), Theme.Primary, TextFormatFlags.NoPadding | TextFormatFlags.NoPrefix);
-                TextRenderer.DrawText(g, PhuDe, Theme.FontNho, new Point(x, rLogo.Top + UiHelper.Dp(19)), Theme.Muted, TextFormatFlags.NoPadding | TextFormatFlags.NoPrefix);
+                int rongChu = Math.Max(0, rNut.Left - UiHelper.Dp(4) - x);
+                TextRenderer.DrawText(g, TieuDe, Theme.FontAppTitle, new Rectangle(x, rLogo.Top - UiHelper.Dp(3), rongChu, UiHelper.Dp(22)), Theme.Primary,
+                    TextFormatFlags.NoPadding | TextFormatFlags.NoPrefix | TextFormatFlags.EndEllipsis);
+                TextRenderer.DrawText(g, PhuDe, Theme.FontNho, new Rectangle(x, rLogo.Top + UiHelper.Dp(19), rongChu, UiHelper.Dp(16)), Theme.Muted,
+                    TextFormatFlags.NoPadding | TextFormatFlags.NoPrefix | TextFormatFlags.EndEllipsis);
+
+                // nút thu gọn cạnh tên ứng dụng
+                if (hoverNut)
+                    using (var path = UiHelper.DuongBoGoc(rNut, Theme.BoGoc))
+                    using (var br = new SolidBrush(Theme.SidebarHover))
+                        g.FillPath(br, path);
+                using (var f = Theme.FontIcon(13f))
+                    TextRenderer.DrawText(g, Icons.DongThanhBen, f, rNut, hoverNut ? Theme.Text : Theme.Muted,
+                        TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix);
             }
-            using (var pen = new Pen(Theme.Border))
-                g.DrawLine(pen, UiHelper.Dp(12), CaoThuongHieu, Width - UiHelper.Dp(12), CaoThuongHieu);
 
             // nhóm + mục
             string nhomTruoc = null;
@@ -193,21 +229,6 @@ namespace XeBus_GIS.UI.Controls
                 }
                 VeMuc(g, m, _muc.IndexOf(m), gon);
             }
-
-            // nút thu gọn
-            var rThu = VungNutThu;
-            if (_hover == -2)
-                using (var path = UiHelper.DuongBoGoc(rThu, Theme.BoGoc))
-                using (var br = new SolidBrush(Theme.SurfaceHover))
-                    g.FillPath(br, path);
-            using (var pen = new Pen(Theme.Border))
-                g.DrawLine(pen, UiHelper.Dp(12), rThu.Top - UiHelper.Dp(8), Width - UiHelper.Dp(12), rThu.Top - UiHelper.Dp(8));
-            var rIconThu = new Rectangle(rThu.X, rThu.Y, RongThu - UiHelper.Dp(16), rThu.Height);
-            using (var f = Theme.FontIcon(11f))
-                TextRenderer.DrawText(g, gon ? Icons.Phai : Icons.Trai, f, rIconThu, Theme.Muted, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix);
-            if (!gon)
-                TextRenderer.DrawText(g, "Thu gọn", Theme.FontNhan, new Rectangle(rIconThu.Right, rThu.Y, rThu.Width - rIconThu.Width, rThu.Height),
-                    Theme.Muted, TextFormatFlags.VerticalCenter | TextFormatFlags.Left | TextFormatFlags.NoPrefix);
         }
 
         private void VeMuc(Graphics g, MucDieuHuong m, int chiSo, bool gon)
@@ -218,7 +239,7 @@ namespace XeBus_GIS.UI.Controls
 
             if (chon || hover)
                 using (var path = UiHelper.DuongBoGoc(r, Theme.BoGoc))
-                using (var br = new SolidBrush(chon ? Theme.AccentSoft : Theme.SurfaceHover))
+                using (var br = new SolidBrush(chon ? Theme.SidebarChon : Theme.SidebarHover))
                     g.FillPath(br, path);
             if (chon)
                 using (var br = new SolidBrush(Theme.Accent))
@@ -259,7 +280,7 @@ namespace XeBus_GIS.UI.Controls
             Cursor = h == -1 ? Cursors.Default : Cursors.Hand;
             string tip = null;
             if (DangGon && h >= 0) tip = _muc[h].Ten;
-            else if (h == -2) tip = DangGon ? "Mở rộng menu (Ctrl+B)" : "Thu gọn menu (Ctrl+B)";
+            else if (h == -2) tip = DangGon ? "Mở rộng thanh bên (Ctrl+B)" : "Thu gọn thanh bên (Ctrl+B)";
             if (tip != _tipDangHien)
             {
                 _tipDangHien = tip;
