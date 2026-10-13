@@ -59,9 +59,7 @@ namespace XeBus_GIS.Map
         public void KhoiTao()
         {
             Map.Projection = tkMapProjection.PROJECTION_GOOGLE_MERCATOR;
-            var nen = ConfigurationManager.AppSettings["NenBanDo"] ?? "OpenStreetMap";
-            Map.TileProvider = nen.Equals("None", StringComparison.OrdinalIgnoreCase)
-                ? tkTileProvider.ProviderNone : tkTileProvider.OpenStreetMap;
+            DatNenBanDo(ConfigurationManager.AppSettings["NenBanDo"]);
             Map.ShowVersionNumber = false;
             Map.ShowRedrawTime = false;
             Map.ScalebarVisible = true;
@@ -130,6 +128,66 @@ namespace XeBus_GIS.Map
                 ThemLoaiDiem(sf, "Đề xuất", "DX", Theme.MapTramDeXuat, 10, tkDefaultPointSymbol.dpsCircle);
                 ThemLoaiDiem(sf, "Ngừng hoạt động", "NG", Theme.MapTramNgung, 7, tkDefaultPointSymbol.dpsCircle);
             });
+        }
+
+        // ---- Bản đồ nền ----
+        // MapWinGIS 4.9 chỉ tải tile qua http, còn máy chủ OSM nay chỉ phục vụ https và một số mạng không phân giải được
+        // openstreetmap.org (nhà cung cấp OSM có sẵn của MapWinGIS ⇒ trắng nền). CARTO đòi API key.
+        // ⇒ App chạy MayChuNenCucBo (127.0.0.1) lấy tile https: kiểu HOT (OSM Pháp – nhãn tiếng Việt một dòng, màu dịu,
+        //   hợp làm nền GIS), dự phòng bằng OSM chuẩn của OSM Đức.
+        private const int IdNenOsm = 2021, IdNenOsmGoc = 2022; // khác id thử CARTO cũ để không dùng nhầm đệm của MapWinGIS
+        private static readonly string[] NguonHot =
+        {
+            "https://a.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png", "https://b.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png",
+            "https://tile.openstreetmap.de/{z}/{x}/{y}.png",
+        };
+        private static readonly string[] NguonChuan =
+        {
+            "https://tile.openstreetmap.de/{z}/{x}/{y}.png", "https://a.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png",
+        };
+        private static MayChuNenCucBo _mayChuNhat, _mayChuGoc;
+
+        /// <summary>Chú thích bản quyền của nền đang dùng (hiện ở thanh trạng thái).</summary>
+        public string BanQuyenNen { get; private set; } = "";
+
+        /// <summary>
+        /// Chọn bản đồ nền theo App.config &lt;add key="NenBanDo"&gt;: OSM (mặc định – kiểu HOT làm nhạt nhẹ),
+        /// OSMChuan (kiểu OSM chuẩn, màu gốc), OpenStreetMap (nhà cung cấp có sẵn của MapWinGIS, http – thường không tải được), None.
+        /// </summary>
+        public void DatNenBanDo(string nen)
+        {
+            nen = (nen ?? "OSM").Trim();
+            if (nen.Equals("None", StringComparison.OrdinalIgnoreCase))
+            {
+                Map.TileProvider = tkTileProvider.ProviderNone;
+                BanQuyenNen = "";
+                return;
+            }
+            if (nen.Equals("OpenStreetMap", StringComparison.OrdinalIgnoreCase))
+            {
+                Map.TileProvider = tkTileProvider.OpenStreetMap;
+                BanQuyenNen = "Nền: © OpenStreetMap contributors";
+                return;
+            }
+            bool goc = nen.Equals("OSMChuan", StringComparison.OrdinalIgnoreCase);
+            int id = goc ? IdNenOsmGoc : IdNenOsm;
+            try
+            {
+                MayChuNenCucBo mc;
+                if (goc) mc = _mayChuGoc ?? (_mayChuGoc = new MayChuNenCucBo(NguonChuan, "osm_chuan", 1f));
+                else mc = _mayChuNhat ?? (_mayChuNhat = new MayChuNenCucBo(NguonHot, "osm_hot_nhat", 0.7f));
+                var ds = Map.Tiles.Providers;
+                if (ds.get_IndexByProviderId(id) < 0)
+                    ds.Add(id, goc ? "OpenStreetMap" : "OpenStreetMap HOT", mc.UrlChoMapWinGis, tkTileProjection.SphericalMercator, 0, 19);
+                Map.Tiles.ProviderId = id;
+                BanQuyenNen = "Nền: © OpenStreetMap contributors";
+            }
+            catch
+            {
+                // không mở được cổng cục bộ (hiếm) – quay về nhà cung cấp có sẵn
+                Map.TileProvider = tkTileProvider.OpenStreetMap;
+                BanQuyenNen = "Nền: © OpenStreetMap contributors";
+            }
         }
 
         private static void KieuDiem(ShapeDrawingOptions o, Color mau, float coDiem, tkDefaultPointSymbol kieu)

@@ -89,6 +89,53 @@ namespace XeBus_GIS.Forms
             _axMap.Name = "axMap";
             pnlMap.Controls.Add(_axMap);
             ((ISupportInitialize)_axMap).EndInit();
+            TaoKhungDuoi();
+        }
+
+        // =====================================================================
+        // Khung ngang dưới bản đồ (bảng kết quả của module – vd tra cứu trạm)
+        // =====================================================================
+        private Panel _pnlDuoi;
+        private Splitter _splDuoi;
+
+        private void TaoKhungDuoi()
+        {
+            _pnlDuoi = new Panel { Dock = DockStyle.Bottom, Height = UiHelper.Dp(270), BackColor = Theme.Surface, Visible = false };
+            _splDuoi = new Splitter { Dock = DockStyle.Bottom, Height = UiHelper.Dp(5), BackColor = Theme.Background, MinSize = UiHelper.Dp(120), MinExtra = UiHelper.Dp(200), Visible = false };
+            _pnlDuoi.Paint += (s, e) =>
+            {
+                using (var pen = new Pen(Theme.Border)) e.Graphics.DrawLine(pen, 0, 0, _pnlDuoi.Width, 0);
+            };
+            // Khung dưới trải từ mép cột module tới mép phải cửa sổ (dưới cả bản đồ và panel phải) cho bảng đủ rộng.
+            // Thứ tự dock (chỉ số lớn dock trước): module trái → khung dưới → panel phải → bản đồ lấp phần còn lại.
+            pnlLamViec.Controls.Add(_pnlDuoi);
+            pnlLamViec.Controls.Add(_splDuoi);
+            var thuTu = new Control[] { pnlTrang, pnlMap, splPhai, pnlPhai, _splDuoi, _pnlDuoi, splTrai, pnlTrai };
+            for (int i = 0; i < thuTu.Length; i++) pnlLamViec.Controls.SetChildIndex(thuTu[i], i);
+        }
+
+        private void HienKhungDuoi(Control noiDung)
+        {
+            if (noiDung == null) return;
+            if (noiDung.Parent != _pnlDuoi)
+            {
+                _pnlDuoi.Controls.Clear();
+                noiDung.Dock = DockStyle.Fill;
+                _pnlDuoi.Controls.Add(noiDung);
+            }
+            noiDung.Visible = true;
+            if (!_pnlDuoi.Visible)
+            {
+                _pnlDuoi.Visible = true;
+                _splDuoi.Visible = true;
+            }
+        }
+
+        private void AnKhungDuoi(Control noiDung)
+        {
+            if (noiDung == null || noiDung.Parent != _pnlDuoi) return;
+            _pnlDuoi.Visible = false;
+            _splDuoi.Visible = false;
         }
 
         private void ApDungGiaoDien()
@@ -376,13 +423,19 @@ namespace XeBus_GIS.Forms
             // bản đồ phải đang hiển thị khi khởi tạo ActiveX
             _mm = new MapManager(_axMap);
             _mm.KhoiTao();
+            if (_mm.BanQuyenNen.Length > 0) slHeToaDo.Text = "WGS 84 · EPSG:4326 · " + _mm.BanQuyenNen;
             _mm.HienThiThayDoi += (khoa, hien) => panelLop.DatHien(khoa, hien);
             _tools = new MapTools(_mm);
             _tools.ToaDoThayDoi += (lon, lat) => slToaDo.Text = $"Kinh độ {lon:0.00000}   Vĩ độ {lat:0.00000}";
             _tools.CongCuThayDoi += CapNhatNutCongCu;
             _tools.ClickChonDoiTuong += async (x, y, tol) => await ChonTaiDiemAsync(x, y, tol);
             _axMap.ExtentsChanged += (s, e) => slTyLe.Text = "Tỷ lệ 1:" + _axMap.CurrentScale.ToString("N0");
-            _boiCanh = new BoiCanh(_mm, _tools, HienThongTin, TrangThai) { MoModule = ChonModule };
+            _boiCanh = new BoiCanh(_mm, _tools, HienThongTin, TrangThai)
+            {
+                MoModule = ChonModule,
+                HienBangDuoi = HienKhungDuoi,
+                AnBangDuoi = AnKhungDuoi,
+            };
             _tools.Dat(CongCu.ChonDoiTuong);
 
             // màn hình laptop: thu gọn menu để dành chỗ cho bản đồ (người dùng mở lại bằng nút / Ctrl+B)

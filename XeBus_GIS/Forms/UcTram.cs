@@ -24,6 +24,7 @@ namespace XeBus_GIS.Forms
 
         private readonly BoiCanh _bc;
         private bool _daNapDanhMuc;
+        private Panel _bangDuoi;     // bảng kết quả đặt ở khung dưới bản đồ (FrmMain)
         private DangCho _dangCho = DangCho.KhongCo;
         private FrmCapNhatTram _formSuaDangMo;   // giữ giá trị đang sửa khi người dùng chọn lại vị trí trên bản đồ
 
@@ -73,13 +74,59 @@ namespace XeBus_GIS.Forms
             UiHelper.Luoi(dgvKetQua);
             UiHelper.NhanTrangThai(dgvKetQua, "Trạng thái");
             UiHelper.TrangThaiRong(dgvKetQua, "Chưa có kết quả.\nNhập điều kiện rồi bấm Tìm kiếm, hoặc tra cứu theo vùng / phường / bán kính trên bản đồ.");
-            pnlNut.Paint += (s, e) =>
-            {
-                using (var pen = new System.Drawing.Pen(Theme.Border)) e.Graphics.DrawLine(pen, 0, 0, pnlNut.Width, 0);
-            };
-            foreach (var p in new Control[] { pnlThuocTinh, pnlKhongGian, pnlNut }) UiHelper.CoGianNgang(p);
+            foreach (var p in new Control[] { pnlThuocTinh, pnlKhongGian }) UiHelper.CoGianNgang(p);
             UiHelper.KhuVucThuGon(pnlThuocTinh, lblHdrThuocTinh);
             UiHelper.KhuVucThuGon(pnlKhongGian, lblHdrKhongGian);
+            TaoBangDuoi();
+        }
+
+        /// <summary>
+        /// Bảng kết quả nằm ngang trong khung dưới bản đồ (đủ rộng để đọc tên trạm, tuyến, phường/xã)
+        /// thay vì cột hẹp bên trái: hàng tiêu đề (số kết quả · Sửa · Xoá kết quả) + lưới.
+        /// Cột trái chỉ còn các điều kiện tra cứu.
+        /// </summary>
+        private void TaoBangDuoi()
+        {
+            _bangDuoi = new Panel { BackColor = Theme.Surface };
+            var hang = new Panel { Dock = DockStyle.Top, Height = UiHelper.Dp(46), BackColor = Theme.Surface, Padding = new Padding(UiHelper.Dp(12), UiHelper.Dp(8), UiHelper.Dp(12), UiHelper.Dp(8)) };
+            Controls.Remove(dgvKetQua);
+            Controls.Remove(pnlNut);
+            Controls.Remove(pnlKetQua);
+
+            btnHuyKetQua.Dock = DockStyle.Right;
+            btnSua.Dock = DockStyle.Right;
+            btnHuyKetQua.Width = UiHelper.Dp(120);
+            btnSua.Width = UiHelper.Dp(170);
+            var cach = new Panel { Dock = DockStyle.Right, Width = UiHelper.Dp(8), BackColor = Theme.Surface };
+            lblKetQua.Dock = DockStyle.Fill;
+            lblKetQua.Font = Theme.FontDam;
+            lblKetQua.AutoEllipsis = true;
+            lblKetQua.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            hang.Controls.Add(lblKetQua);
+            hang.Controls.Add(btnSua);
+            hang.Controls.Add(cach);
+            hang.Controls.Add(btnHuyKetQua);
+            UiHelper.DuongKe(hang);
+
+            dgvKetQua.Dock = DockStyle.Fill;
+            _bangDuoi.Controls.Add(dgvKetQua);
+            _bangDuoi.Controls.Add(hang);
+
+            // cột trái: gợi ý kết quả nằm ở bảng dưới bản đồ
+            lblKetQua.Text = "Kết quả";
+            var goiY = new System.Windows.Forms.Label
+            {
+                Dock = DockStyle.Top,
+                Height = UiHelper.Dp(44),
+                Padding = new Padding(UiHelper.Dp(12), 0, UiHelper.Dp(12), 0),
+                TextAlign = System.Drawing.ContentAlignment.MiddleLeft,
+                Text = "Kết quả tra cứu hiển thị ở bảng phía dưới bản đồ.",
+                UseMnemonic = false,
+            };
+            UiHelper.ChuPhu(goiY);
+            Controls.Add(goiY);
+            // dock Top theo thứ tự: tiêu đề · thuộc tính · không gian · gợi ý
+            foreach (var p in new Control[] { lblTieuDe, pnlThuocTinh, pnlKhongGian, goiY }) p.BringToFront();
         }
 
 
@@ -128,6 +175,7 @@ namespace XeBus_GIS.Forms
         // =====================================================================
         public async void KichHoat()
         {
+            _bc.HienBangDuoi?.Invoke(_bangDuoi);
             if (_daNapDanhMuc) return;
             try
             {
@@ -142,7 +190,6 @@ namespace XeBus_GIS.Forms
                 cboTrangThai.Items.AddRange(TramRepository.TrangThaiTram);
                 cboTrangThai.SelectedIndex = 0;
                 _daNapDanhMuc = true;
-                lblKetQua.Text = "Nhập điều kiện rồi bấm Tìm kiếm, hoặc tra cứu trên bản đồ.";
             }
             catch (Exception ex)
             {
@@ -152,6 +199,7 @@ namespace XeBus_GIS.Forms
 
         public void NgungKichHoat()
         {
+            _bc.AnBangDuoi?.Invoke(_bangDuoi);
             if (_dangCho != DangCho.KhongCo)
             {
                 _dangCho = DangCho.KhongCo;
@@ -297,14 +345,14 @@ namespace XeBus_GIS.Forms
             dgvKetQua.DataSource = kq;
             UiHelper.CotVuaDu(dgvKetQua, "Mã");
             UiHelper.CotCoDinh(dgvKetQua, "Trạng thái", 104);
-            if (dgvKetQua.Columns.Contains("Tên trạm")) dgvKetQua.Columns["Tên trạm"].FillWeight = 70;
-            if (dgvKetQua.Columns.Contains("Loại")) dgvKetQua.Columns["Loại"].Visible = false;
-            if (dgvKetQua.Columns.Contains("Phường/xã")) dgvKetQua.Columns["Phường/xã"].Visible = false;
-            if (dgvKetQua.Columns.Contains("Tuyến")) dgvKetQua.Columns["Tuyến"].FillWeight = 24;
+            // bảng nằm ngang dưới bản đồ – đủ rộng để hiện đủ các cột
+            if (dgvKetQua.Columns.Contains("Tên trạm")) dgvKetQua.Columns["Tên trạm"].FillWeight = 100;
+            if (dgvKetQua.Columns.Contains("Loại")) dgvKetQua.Columns["Loại"].FillWeight = 34;
+            if (dgvKetQua.Columns.Contains("Phường/xã")) dgvKetQua.Columns["Phường/xã"].FillWeight = 46;
+            if (dgvKetQua.Columns.Contains("Tuyến")) dgvKetQua.Columns["Tuyến"].FillWeight = 40;
             if (dgvKetQua.Columns.Contains("Khoảng cách (m)"))
             {
-                dgvKetQua.Columns["Khoảng cách (m)"].HeaderText = "m";
-                dgvKetQua.Columns["Khoảng cách (m)"].FillWeight = 18;
+                dgvKetQua.Columns["Khoảng cách (m)"].FillWeight = 26;
             }
             UiHelper.CanPhaiCotSo(dgvKetQua);
             dgvKetQua.ClearSelection();

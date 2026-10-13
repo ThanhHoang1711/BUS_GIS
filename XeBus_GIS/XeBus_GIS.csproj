@@ -100,16 +100,27 @@
     <Compile Include="Security\Session.cs" />
     <Compile Include="Map\MapManager.cs" />
     <Compile Include="Map\MapTools.cs" />
+    <Compile Include="Map\MayChuNenCucBo.cs" />
     <Compile Include="UI\Theme.cs" />
     <Compile Include="UI\Icons.cs" />
     <Compile Include="UI\UiHelper.cs" />
-    <Compile Include="UI\Controls\Toast.cs" />
-    <Compile Include="UI\Controls\HopThoai.cs" />
+    <Compile Include="UI\Controls\Toast.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\Controls\HopThoai.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="UI\Controls\ThanhDieuHuong.cs" />
     <Compile Include="UI\Controls\PanelLopBanDo.cs" />
-    <Compile Include="UI\Controls\KhungChuGiai.cs" />
-    <Compile Include="UI\Controls\TheKpi.cs" />
-    <Compile Include="UI\Controls\ThanhBuoc.cs" />
+    <Compile Include="UI\Controls\KhungChuGiai.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="UI\Controls\TheKpi.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="UI\Controls\ThanhBuoc.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Forms\FrmDangNhap.cs">
       <SubType>Form</SubType>
     </Compile>

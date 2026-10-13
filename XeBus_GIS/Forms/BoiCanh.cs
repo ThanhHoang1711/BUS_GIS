@@ -24,6 +24,15 @@ namespace XeBus_GIS.Forms
         /// </summary>
         public Func<string, System.Windows.Forms.Control> MoModule { get; set; }
 
+        /// <summary>
+        /// Đặt một khối nội dung (thường là bảng kết quả) vào khung ngang dưới bản đồ và hiện khung đó
+        /// (khung kéo giãn được bằng thanh chia). Module gọi trong KichHoat.
+        /// </summary>
+        public Action<System.Windows.Forms.Control> HienBangDuoi { get; set; }
+
+        /// <summary>Ẩn khung dưới bản đồ nếu nó đang chứa khối nội dung này. Module gọi trong NgungKichHoat.</summary>
+        public Action<System.Windows.Forms.Control> AnBangDuoi { get; set; }
+
         /// <summary>Phát ra khi người dùng click chọn một đối tượng trên bản đồ (loai, ma).</summary>
         public event Action<string, string> DoiTuongDuocChon;
 
