@@ -69,9 +69,9 @@ Font Segoe Fluent Icons (Win11) / Segoe MDL2 Assets (`UI/Icons.cs`), không emoj
 ## 4. Màn hình
 | Màn hình | Nội dung chính |
 |---|---|
-| Đăng nhập (`FrmDangNhap`, 720×480) | dải nhận diện xanh nhạt (3 chức năng chính) + cột đăng nhập; lỗi hiện ngay dưới ô mật khẩu |
+| Đăng nhập (`FrmDangNhap`, toàn màn hình) | trái: video nền 3D dựng bằng Blender từ dữ liệu thật (`NenVideo`, phủ tối, tôn trọng tắt hiệu ứng của Windows) + giới thiệu, 3 chức năng, số liệu thật; phải: cột form 480 px căn giữa; lỗi hiện ngay dưới ô mật khẩu |
 | Tổng quan (`UcTongQuan`) | 6 thẻ KPI (dữ liệu thật), biểu đồ 12 phường/xã nhiều trạm, bảng phường/xã cần chú ý, trạm cập nhật gần đây, % công trình được phục vụ theo loại; double-click → mở trên bản đồ |
-| Trạm (`UcTram`) | tra cứu thuộc tính (thu/mở) · tra cứu không gian (vẽ vùng / phường / bán kính) · lưới kết quả có nhãn trạng thái · sửa |
+| Trạm (`UcTram`) | cột trái: tra cứu thuộc tính (thu/mở) · tra cứu không gian (vẽ vùng / phường / bán kính); **bảng kết quả nằm ngang dưới bản đồ** (khung dưới của FrmMain, kéo giãn được) có nhãn trạng thái · sửa |
 | Tuyến (`UcTuyen`) | danh sách tuyến có ô màu đúng màu trên bản đồ · trạm theo thứ tự (số trên bản đồ) · sửa, gán trạm |
 | Thiếu trạm (`UcPhanTich`) | 1 vùng · 2 tiêu chí (có câu giải thích) · 3 kết quả: KPI, chú giải, KDC thiếu trạm, vùng đã phục vụ; nút chuyển sang Đề xuất cùng vùng/tiêu chí |
 | Đề xuất (`UcDeXuat`) | thanh bước 5 bước, chú giải bước 2–3, biểu đồ điểm dân số/công trình, đánh giá vị trí tự chọn |

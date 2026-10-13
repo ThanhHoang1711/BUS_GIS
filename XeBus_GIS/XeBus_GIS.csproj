@@ -111,6 +111,9 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="UI\Controls\ThanhDieuHuong.cs" />
+    <Compile Include="UI\Controls\NenVideo.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="UI\Controls\PanelLopBanDo.cs" />
     <Compile Include="UI\Controls\KhungChuGiai.cs">
       <SubType>Component</SubType>
@@ -222,6 +225,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+    <Content Include="Assets\nen_dangnhap.bin">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <None Include="app.manifest" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -31,61 +31,75 @@ namespace XeBus_GIS.Forms
         {
             BackColor = Theme.Surface;
 
-            // dải nhận diện bên trái
-            pnlBrand.BackColor = Theme.AccentSoft;
-            lblLogo.Text = Icons.Bus;
-            lblLogo.Font = Theme.FontIcon(22f);
-            lblLogo.ForeColor = Color.White;
-            lblLogo.BackColor = Theme.Accent;
-            lblTenApp.Font = new Font("Segoe UI Semibold", 18f);
-            lblTenApp.ForeColor = Theme.Primary;
-            lblMoTa.Font = Theme.FontThuong;
-            lblMoTa.ForeColor = Theme.Secondary;
-            lblNguon.Font = Theme.FontNho;
-            lblNguon.ForeColor = Theme.Muted;
-            lblTinhNang.Paint += VeTinhNang;
+            // bên trái: hình nền động (render Blender từ dữ liệu CSDLKG) + giới thiệu hệ thống
+            nenVideo.TieuDe = "XeBus GIS";
+            nenVideo.Slogan = "Mạng lưới trạm xe buýt Hà Nội trên một bản đồ";
+            nenVideo.MoTa = "Quản lý trạm và tuyến, tìm khu dân cư chưa được phục vụ và đề xuất vị trí trạm mới "
+                          + "dựa trên dân số, công trình thu hút chuyến đi.";
+            nenVideo.TinhNang = TinhNang;
+            nenVideo.ChuThichNguon = "Hình nền: mô hình 3D dựng từ dữ liệu CSDLKG (nhà, mặt nước, tuyến, trạm) · © OpenStreetMap contributors";
+            nenVideo.Nap(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "nen_dangnhap.bin"));
 
-            // cột đăng nhập
-            lblDangNhap.Font = Theme.FontTrang;
+            // bên phải: cột đăng nhập, khối form luôn căn giữa
+            pnlForm.BackColor = Theme.Surface;
+            pnlKhung.BackColor = Theme.Surface;
+            pnlForm.Width = UiHelper.Dp(480);
+            pnlForm.Resize += (s, e) => CanGiuaKhung();
+            CanGiuaKhung();
+
+            lblDangNhap.Font = new Font("Segoe UI Semibold", 20f);
             lblDangNhap.ForeColor = Theme.Primary;
             UiHelper.ChuPhu(lblHuongDan);
             UiHelper.O(txtTenDN, txtMatKhau);
+            txtTenDN.Font = txtMatKhau.Font = new Font("Segoe UI", 11.25f);
             UiHelper.NhanTruong(lblTenDN);
             UiHelper.NhanTruong(lblMatKhau);
             UiHelper.NutIcon(btnHienMK, Icons.Mat, "Hiện / ẩn mật khẩu", 11f);
             btnHienMK.FlatAppearance.BorderSize = 1;
             btnHienMK.FlatAppearance.BorderColor = Theme.Border;
+            btnHienMK.Top = txtMatKhau.Top;
+            btnHienMK.Height = txtMatKhau.Height;
             UiHelper.NutChinh(btnDangNhap);
+            btnDangNhap.Font = new Font("Segoe UI Semibold", 10.5f);
             lblLoi.ForeColor = Theme.Danger;
             lnkKhach.LinkColor = Theme.Accent;
             lnkKhach.ActiveLinkColor = Theme.AccentHover;
             lnkKhach.Cursor = Cursors.Hand;
+            lnkKhach.UseMnemonic = false;
             lblKetNoi.Font = Theme.FontNhan;
             lblKetNoi.ForeColor = Theme.Muted;
+            pnlForm.Paint += (s, e) =>
+            {
+                using (var pen = new Pen(Theme.Border)) e.Graphics.DrawLine(pen, 0, 0, 0, pnlForm.Height);
+            };
+        }
+
+        private void CanGiuaKhung()
+        {
+            pnlKhung.Left = Math.Max(UiHelper.Dp(24), (pnlForm.Width - pnlKhung.Width) / 2);
+            pnlKhung.Top = Math.Max(UiHelper.Dp(24), (pnlForm.Height - lblKetNoi.Height - pnlKhung.Height) / 2);
         }
 
         /// <summary>Ba nhóm chức năng chính của hệ thống (đúng với các màn hình đã có).</summary>
         private static readonly (string icon, string ten, string moTa)[] TinhNang =
         {
-            (Icons.Tram, "Quản lý trạm, tuyến", "Tra cứu theo thuộc tính và trên bản đồ"),
-            (Icons.PhanTich, "Phân tích thiếu trạm", "Khu dân cư nằm ngoài bán kính phục vụ"),
-            (Icons.DeXuat, "Đề xuất trạm mới", "Chấm điểm theo dân số, công trình"),
+            (Icons.Tram, "Quản lý trạm, tuyến", "Tra cứu theo thuộc tính và trực tiếp trên bản đồ"),
+            (Icons.PhanTich, "Phân tích thiếu trạm", "Khu dân cư nằm ngoài bán kính phục vụ của trạm"),
+            (Icons.DeXuat, "Đề xuất trạm mới", "Chấm điểm vị trí theo dân số và công trình"),
         };
 
-        private void VeTinhNang(object sender, PaintEventArgs e)
+        /// <summary>Số liệu thật của mạng lưới (chỉ đọc) – hiện dưới phần giới thiệu.</summary>
+        private async Task NapSoLieuAsync()
         {
-            var g = e.Graphics;
-            int y = 0, cao = UiHelper.Dp(48);
-            using (var f = Theme.FontIcon(13f))
-                foreach (var (icon, ten, moTa) in TinhNang)
-                {
-                    TextRenderer.DrawText(g, icon, f, new Rectangle(0, y, UiHelper.Dp(28), UiHelper.Dp(24)), Theme.Accent,
-                        TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix);
-                    TextRenderer.DrawText(g, ten, Theme.FontDam, new Point(UiHelper.Dp(32), y + UiHelper.Dp(2)), Theme.Primary);
-                    TextRenderer.DrawText(g, moTa, Theme.FontNhan, new Rectangle(UiHelper.Dp(32), y + UiHelper.Dp(22), lblTinhNang.Width - UiHelper.Dp(32), UiHelper.Dp(20)),
-                        Theme.Muted, TextFormatFlags.Left | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix);
-                    y += cao;
-                }
+            try
+            {
+                var dt = await Db.QueryAsync(@"SELECT (SELECT count(*) FROM xebus.trambuyt WHERE trangthai <> 'Ngừng hoạt động') AS tram,
+                                                      (SELECT count(*) FROM xebus.tuyenbuyt) AS tuyen,
+                                                      (SELECT count(*) FROM xebus.phuongxa) AS phuong");
+                var r = dt.Rows[0];
+                nenVideo.SoLieu = $"{Convert.ToInt64(r["tram"]):N0} trạm đang khai thác  ·  {Convert.ToInt64(r["tuyen"])} tuyến  ·  {Convert.ToInt64(r["phuong"])} phường/xã";
+            }
+            catch { /* không có số liệu thì bỏ qua dòng này */ }
         }
 
         private async Task KiemTraKetNoiAsync()
@@ -97,7 +111,11 @@ namespace XeBus_GIS.Forms
             lblKetNoi.Text = ok ? "● Đã kết nối CSDL CSDLKG" : "● Không kết nối được CSDL";
             btnDangNhap.Enabled = lnkKhach.Enabled = ok;
             if (!ok) BaoLoi("Lỗi kết nối: " + loi);
-            else txtTenDN.Focus();
+            else
+            {
+                txtTenDN.Focus();
+                await NapSoLieuAsync();
+            }
         }
 
         private void BaoLoi(string noiDung)
