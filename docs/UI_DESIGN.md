@@ -1,22 +1,23 @@
 # XeBus GIS – Thiết kế giao diện
 
-Phong cách: **Modern GIS Desktop · Clean Enterprise · Light Urban Analytics**. Bản đồ là trung tâm, giao diện sáng, một màu hành động chính (xanh `#2563EB`); các màu khác chỉ dùng để mang nghĩa (trạng thái, ký hiệu bản đồ).
+Phong cách: **Modern GIS Desktop · Clean Enterprise · Light Urban Analytics** (tham chiếu skill `ui-ux-pro-max`: Data-Dense Dashboard, chữ phụ tối thiểu slate-600). Bản đồ là trung tâm, giao diện sáng, một màu hành động chính (teal `#0F766E`); các màu khác chỉ dùng để mang nghĩa (trạng thái, ký hiệu bản đồ).
 
 ## 1. Design system (`XeBus_GIS/UI/Theme.cs` – không hard-code màu/font trong form)
 
 ### Màu
 | Token | Giá trị | Dùng cho |
 |---|---|---|
-| `Background` | `#F5F7FB` | nền cửa sổ, nền trang Tổng quan / Quản trị |
-| `Surface` / `SurfaceAlt` | `#FFFFFF` / `#F8FAFC` | panel, thẻ / header lưới, vùng phụ |
-| `Accent` (+`AccentHover` `#1D4ED8`, `AccentPressed` `#1E40AF`) | `#2563EB` | nút chính, mục menu đang chọn, trạm trên bản đồ |
-| `AccentSoft` | `#EAF1FE` | nền mục đang chọn, dòng lưới được chọn, công cụ đang bật |
-| `Accent2` | `#06B6D4` | vùng phục vụ, biểu đồ phụ |
+| `Background` | `#F4F6F8` | nền cửa sổ, nền trang Tổng quan / Quản trị |
+| `Surface` / `SurfaceAlt` | `#FFFFFF` / `#F8FAFB` | panel, thẻ / header lưới, vùng phụ |
+| `Sidebar` / `SidebarHover` / `SidebarChon` | `#EEF2F5` / `#E2E8ED` / `#DCEFEA` | thanh điều hướng trái (tông riêng, đậm hơn vùng làm việc một bậc) |
+| `Accent` (+`AccentHover` `#115E59`, `AccentPressed` `#134E4A`) | `#0F766E` (teal) | nút chính, mục menu đang chọn, trạm trên bản đồ |
+| `AccentSoft` | `#E6F4F1` | nền mục đang chọn, dòng lưới được chọn, công cụ đang bật |
+| `Accent2` | `#0EA5E9` | vùng phục vụ, biểu đồ phụ |
 | `Highlight` | `#F97316` | **chỉ** trạm đề xuất / ứng viên |
 | `MapChon` / `MapChonDuong` | `#FACC15` / `#EAB308` | đối tượng đang chọn trên bản đồ (khác màu đề xuất) |
 | `Success` / `Warning` (`WarningText` `#B45309`) / `Danger` | `#16A34A` / `#F59E0B` / `#DC2626` | trạng thái |
-| `Text` / `Muted` / `Disabled` | `#172033` / `#64748B` / `#94A3B8` | chữ chính / phụ / bị khoá |
-| `Border` / `BorderStrong` | `#E2E8F0` / `#CBD5E1` | đường kẻ, viền ô nhập |
+| `Text` / `Muted` / `Disabled` | `#0F172A` / `#475569` / `#94A3B8` | chữ chính / phụ / bị khoá |
+| `Border` / `BorderStrong` | `#E2E7EC` / `#CAD2DA` | đường kẻ, viền ô nhập |
 Thang màu bản đồ: `ThangMauSoTram` (0 trạm đỏ nhạt → xanh đậm), `ThangMauPhucVu` (< 25% đỏ → ≥ 75% xanh lá), `MauTuyen` (8 màu tuyến). Nhãn trạng thái trong lưới: `Theme.MauTrangThai()` (Hoạt động xanh lá, Đề xuất cam, Tạm dừng vàng, Ngừng/Khóa/Thất bại đỏ).
 
 ### Chữ (Segoe UI)
@@ -39,10 +40,10 @@ Font Segoe Fluent Icons (Win11) / Segoe MDL2 Assets (`UI/Icons.cs`), không emoj
 | Biểu đồ | `UiHelper.BieuDo` | nền trắng, lưới mảnh, chữ Muted |
 | Thông báo | `Toast` (`UiHelper.ThongBao/ThanhCong/CanhBao`) | không chặn, góc dưới phải, tự đóng 3,5 s, di chuột lên để giữ |
 | Hộp thoại | `HopThoai` (`UiHelper.Loi/XacNhan/XacNhanNguyHiem`) | thay MessageBox; thao tác xoá: nút đỏ, focus mặc định vào Huỷ |
-| Thanh điều hướng | `UI/Controls/ThanhDieuHuong` | nhóm mục, thu gọn 220↔56 px (≈120 ms, khoá vẽ bản đồ trong lúc co giãn), tooltip khi thu gọn, ↑↓ Enter |
+| Thanh điều hướng | `UI/Controls/ThanhDieuHuong` | nhóm mục, nút thu/mở ở góc trên như Claude.ai (thu gọn: di chuột lên logo → nút mở rộng), thu gọn 220↔56 px (≈120 ms, khoá vẽ bản đồ trong lúc co giãn), tooltip khi thu gọn, ↑↓ Enter |
 | Lớp & chú giải | `UI/Controls/PanelLopBanDo` | nhóm lớp, ô bật/tắt, ký hiệu, số đối tượng / Đang tải / Lỗi tải, chú giải loại ký hiệu |
 | Chú giải ngắn | `UI/Controls/KhungChuGiai` | trong module (Phân tích, Đề xuất, Thống kê) |
-| Thẻ số liệu | `UI/Controls/TheKpi` | nhãn · giá trị · chú thích, vạch màu ý nghĩa |
+| Thẻ số liệu | `UI/Controls/TheKpi` | chấm màu ý nghĩa + nhãn · giá trị · chú thích |
 | Thanh bước | `UI/Controls/ThanhBuoc` | wizard Đề xuất; click bước đã qua để quay lại |
 | Tiến trình | `UiHelper.ChayAsync` + `UiHelper.TienTrinh` | khoá nút + "Đang …" + thanh marquee ở status bar |
 
@@ -58,7 +59,7 @@ Font Segoe Fluent Icons (Win11) / Segoe MDL2 Assets (`UI/Icons.cs`), không emoj
 │ PHÂN TÍCH   │   ┊ = thanh chia kéo được (Splitter); panel phải ẩn/hiện bằng nút ▣ hoặc ›
 │ Thiếu trạm, Đề xuất, Thống kê
 │ HỆ THỐNG    │ Tổng quan, Quản trị: hiển thị toàn trang (ẩn bản đồ, công cụ, panel phải)
-└ « Thu gọn ──┘
+└─────────────┘  nút [◧] thu/mở nằm cạnh “XeBus GIS” ở đầu menu
 ```
 - Mục menu ẩn theo quyền (`Session.Co/CoNhom`); Thiếu trạm cần `DX_THIEUTRAM`.
 - Phím tắt: **Ctrl+F** tìm nhanh, **Ctrl+B** thu/mở menu, **F5** nạp lại bản đồ, **Esc** huỷ vẽ/đo/chọn điểm hoặc đóng gợi ý tìm kiếm.

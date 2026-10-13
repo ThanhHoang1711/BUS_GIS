@@ -5,7 +5,7 @@ using System.Windows.Forms;
 namespace XeBus_GIS.UI.Controls
 {
     /// <summary>
-    /// Ô số liệu: nhãn (chữ phụ) · giá trị lớn · chú thích nhỏ. Vạch màu bên trái thể hiện ý nghĩa
+    /// Ô số liệu: chấm màu + nhãn (chữ phụ) · giá trị lớn · chú thích nhỏ. Chấm màu thể hiện ý nghĩa
     /// (Accent = trung tính, Danger = cần chú ý…). Giá trị chưa có thì hiện "—".
     /// </summary>
     public class TheKpi : Control
@@ -44,11 +44,15 @@ namespace XeBus_GIS.UI.Controls
             var g = e.Graphics;
             using (var pen = new Pen(Theme.Border))
                 g.DrawRectangle(pen, 0, 0, Width - 1, Height - 1);
-            using (var br = new SolidBrush(_mauNhan))
-                g.FillRectangle(br, 0, 0, UiHelper.Dp(3), Height);
 
             int x = UiHelper.Dp(14), w = Width - x - UiHelper.Dp(8);
-            TextRenderer.DrawText(g, _nhan, Theme.FontNhan, new Rectangle(x, UiHelper.Dp(10), w, UiHelper.Dp(18)), Theme.Muted,
+            // chấm màu ý nghĩa trước nhãn (nhẹ hơn vạch màu cả chiều cao ô)
+            int d = UiHelper.Dp(7);
+            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            using (var br = new SolidBrush(_mauNhan))
+                g.FillEllipse(br, x, UiHelper.Dp(10) + (UiHelper.Dp(17) - d) / 2, d, d);
+            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.None;
+            TextRenderer.DrawText(g, _nhan, Theme.FontNhan, new Rectangle(x + d + UiHelper.Dp(6), UiHelper.Dp(10), w - d - UiHelper.Dp(6), UiHelper.Dp(18)), Theme.Muted,
                 TextFormatFlags.Left | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPadding | TextFormatFlags.NoPrefix);
             // vùng giá trị: giữa nhãn và chú thích (co theo chiều cao ô)
             int yGt = UiHelper.Dp(28), cuoi = Height - (string.IsNullOrEmpty(_chuThich) ? UiHelper.Dp(8) : UiHelper.Dp(26));

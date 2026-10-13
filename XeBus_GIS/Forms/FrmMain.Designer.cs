@@ -87,7 +87,6 @@
             // 
             // navBar
             // 
-            this.navBar.BackColor = System.Drawing.Color.White;
             this.navBar.Dock = System.Windows.Forms.DockStyle.Left;
             this.navBar.KhoaDangChon = null;
             this.navBar.Location = new System.Drawing.Point(0, 0);
