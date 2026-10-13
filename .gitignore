@@ -1,0 +1,197 @@
+# ===================================================================
+#  XeBus_GIS – .gitignore
+#  C# WinForms (.NET Framework 4.7.2) · Visual Studio 2022 · MapWinGIS
+#  PostgreSQL/PostGIS (CSDLKG)
+# ===================================================================
+
+# -------------------------------------------------------------------
+# Bí mật / cấu hình cục bộ – KHÔNG BAO GIỜ đẩy lên
+# -------------------------------------------------------------------
+# MCP (chứa GITHUB_PERSONAL_ACCESS_TOKEN)
+.mcp.json
+# Cấu hình Claude Code cục bộ của từng máy
+.claude/settings.local.json
+# Biến môi trường, chuỗi kết nối riêng
+.env
+.env.*
+*.pgpass
+pgpass.conf
+# Cấu hình ghi đè theo máy (nếu sau này tách App.config)
+App.local.config
+*.local.config
+secrets.json
+
+# -------------------------------------------------------------------
+# Dữ liệu CSDL sinh ra (backup pg_dump chứa toàn bộ dữ liệu CSDLKG)
+# -------------------------------------------------------------------
+database/backup/
+*.backup
+*.dump
+*.sql.gz
+*.pgdump
+
+# -------------------------------------------------------------------
+# Build output
+# -------------------------------------------------------------------
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+publish/
+*.app.publish/
+app.publish/
+
+# MSBuild / interop sinh tự động (Interop.MapWinGIS.dll, AxInterop.MapWinGIS.dll)
+*.binlog
+*.tlog
+*.lastbuildstate
+*.cache
+!*.[Cc]ache/
+Interop.*.dll
+AxInterop.*.dll
+*.ilk
+*.meta
+*.obj
+*.iobj
+*.pch
+*.pdb
+*.ipdb
+*.pgc
+*.pgd
+*.rsp
+*.sbr
+*.tlb
+*.tli
+*.tlh
+*.tmp
+*.tmp_proj
+*_wpftmp.csproj
+*.log
+*.vspscc
+*.vssscc
+.builds
+*.pidb
+*.svclog
+*.scc
+
+# -------------------------------------------------------------------
+# Visual Studio
+# -------------------------------------------------------------------
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.userprefs
+*.rsuser
+ipch/
+*.aps
+*.ncb
+*.opendb
+*.opensdf
+*.sdf
+*.VC.db
+*.VC.VC.opendb
+*.vsp
+*.vspx
+*.sap
+*.psess
+*.vsps
+*.e2e
+# Visual Studio cache/options
+*.ide/
+UpgradeLog*.XML
+UpgradeLog*.htm
+ServiceFabricBackup/
+*.rptproj.bak
+_UpgradeReport_Files/
+Backup*/
+
+# Rider / JetBrains
+.idea/
+*.sln.iml
+
+# ReSharper
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+
+# VS Code (giữ settings.json dùng chung)
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.history/
+
+# -------------------------------------------------------------------
+# NuGet
+# -------------------------------------------------------------------
+*.nupkg
+*.snupkg
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+*.nuget.props
+*.nuget.targets
+project.lock.json
+project.fragment.lock.json
+artifacts/
+.nuget/
+
+# -------------------------------------------------------------------
+# Test / coverage
+# -------------------------------------------------------------------
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+*.VisualState.xml
+TestResult.xml
+nunit-*.xml
+*.coverage
+*.coveragexml
+coverage*.json
+coverage*.xml
+coverage*.info
+
+# -------------------------------------------------------------------
+# Báo cáo / file xuất từ ứng dụng
+# -------------------------------------------------------------------
+BaoCao_*.xlsx
+xuat/
+export/
+
+# -------------------------------------------------------------------
+# Office – file khoá tạm khi đang mở .docx/.xlsx
+# -------------------------------------------------------------------
+~$*
+*.~*
+
+# -------------------------------------------------------------------
+# GIS – file phụ sinh tự động (giữ .shp .shx .dbf .prj .cpg .sbn .sbx)
+# -------------------------------------------------------------------
+*.shp.lock
+*.qix
+*.aux.xml
+*.ovr
+*.qgs~
+*.qgz~
+
+# -------------------------------------------------------------------
+# Hệ điều hành / editor
+# -------------------------------------------------------------------
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+.DS_Store
+*.swp
+*.bak
+*.orig

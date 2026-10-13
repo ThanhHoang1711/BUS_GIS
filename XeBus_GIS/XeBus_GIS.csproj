@@ -1,0 +1,217 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{53A8ECC8-541D-4416-9680-5136A5DA7EAB}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>XeBus_GIS</RootNamespace>
+    <AssemblyName>XeBus_GIS</AssemblyName>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <Deterministic>true</Deterministic>
+    <LangVersion>7.3</LangVersion>
+    <!-- Bắt buộc khi PlatformTarget=x64 + PackageReference (NuGet cần biết RID khi restore) -->
+    <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
+  <!-- MapWinGIS.ocx là bản 64-bit => bắt buộc chạy x64 (kể cả khi chọn "Any CPU" trong VS) -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>x64</PlatformTarget>
+    <Prefer32Bit>false</Prefer32Bit>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>x64</PlatformTarget>
+    <Prefer32Bit>false</Prefer32Bit>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Deployment" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Windows.Forms.DataVisualization" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Npgsql">
+      <Version>4.1.13</Version>
+    </PackageReference>
+    <PackageReference Include="ClosedXML">
+      <Version>0.95.4</Version>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <!-- MapWinGIS 4.9 (C:\dev\MapWinGIS\MapWinGIS.ocx) -->
+    <COMReference Include="MapWinGIS">
+      <Guid>{C368D713-CC5F-40ED-9F53-F84FE197B96A}</Guid>
+      <VersionMajor>4</VersionMajor>
+      <VersionMinor>9</VersionMinor>
+      <Lcid>0</Lcid>
+      <WrapperTool>tlbimp</WrapperTool>
+      <Isolated>False</Isolated>
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+    </COMReference>
+    <COMReference Include="AxMapWinGIS">
+      <Guid>{C368D713-CC5F-40ED-9F53-F84FE197B96A}</Guid>
+      <VersionMajor>4</VersionMajor>
+      <VersionMinor>9</VersionMinor>
+      <Lcid>0</Lcid>
+      <WrapperTool>aximp</WrapperTool>
+      <Isolated>False</Isolated>
+    </COMReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="Data\Db.cs" />
+    <Compile Include="Data\NguoiDungRepository.cs" />
+    <Compile Include="Data\BanDoRepository.cs" />
+    <Compile Include="Data\TramRepository.cs" />
+    <Compile Include="Data\TuyenRepository.cs" />
+    <Compile Include="Data\DeXuatRepository.cs" />
+    <Compile Include="Data\ThongKeRepository.cs" />
+    <Compile Include="Data\BaoCaoExcel.cs" />
+    <Compile Include="Data\QuanTriRepository.cs" />
+    <Compile Include="Data\TongQuanRepository.cs" />
+    <Compile Include="Security\PasswordHasher.cs" />
+    <Compile Include="Security\Quyen.cs" />
+    <Compile Include="Security\Session.cs" />
+    <Compile Include="Map\MapManager.cs" />
+    <Compile Include="Map\MapTools.cs" />
+    <Compile Include="UI\Theme.cs" />
+    <Compile Include="UI\Icons.cs" />
+    <Compile Include="UI\UiHelper.cs" />
+    <Compile Include="UI\Controls\Toast.cs" />
+    <Compile Include="UI\Controls\HopThoai.cs" />
+    <Compile Include="UI\Controls\ThanhDieuHuong.cs" />
+    <Compile Include="UI\Controls\PanelLopBanDo.cs" />
+    <Compile Include="UI\Controls\KhungChuGiai.cs" />
+    <Compile Include="UI\Controls\TheKpi.cs" />
+    <Compile Include="UI\Controls\ThanhBuoc.cs" />
+    <Compile Include="Forms\FrmDangNhap.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\FrmDangNhap.Designer.cs">
+      <DependentUpon>FrmDangNhap.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\FrmMain.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\FrmMain.Designer.cs">
+      <DependentUpon>FrmMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\BoiCanh.cs" />
+    <Compile Include="Forms\UcPhanTich.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Forms\UcPhanTich.Designer.cs">
+      <DependentUpon>UcPhanTich.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\UcTongQuan.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Forms\UcTongQuan.Designer.cs">
+      <DependentUpon>UcTongQuan.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\UcTram.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Forms\UcTram.Designer.cs">
+      <DependentUpon>UcTram.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\UcTuyen.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Forms\UcTuyen.Designer.cs">
+      <DependentUpon>UcTuyen.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\FrmCapNhatTuyen.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\FrmCapNhatTuyen.Designer.cs">
+      <DependentUpon>FrmCapNhatTuyen.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\FrmGanTram.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\FrmGanTram.Designer.cs">
+      <DependentUpon>FrmGanTram.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\UcDeXuat.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Forms\UcDeXuat.Designer.cs">
+      <DependentUpon>UcDeXuat.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\UcThongKe.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Forms\UcThongKe.Designer.cs">
+      <DependentUpon>UcThongKe.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\UcQuanTri.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Forms\UcQuanTri.Designer.cs">
+      <DependentUpon>UcQuanTri.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\FrmCapNhatTram.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\FrmCapNhatTram.Designer.cs">
+      <DependentUpon>FrmCapNhatTram.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\UcDangPhatTrien.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="Forms\FrmMain.resx">
+      <DependentUpon>FrmMain.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+    <Compile Include="Properties\Settings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config" />
+    <None Include="app.manifest" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>
