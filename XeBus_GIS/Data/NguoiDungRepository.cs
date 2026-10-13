@@ -16,6 +16,38 @@ namespace XeBus_GIS.Data
         public const string KetQuaKhongTonTai = "Không tồn tại";
         public const string KetQuaBiKhoa = "Tài khoản bị khóa";
 
+        /// <summary>Trạng thái tài khoản tự đăng ký, chờ quản trị viên duyệt (đổi sang "Hoạt động" trong màn hình Quản trị).</summary>
+        public const string TrangThaiChoDuyet = "Chờ duyệt";
+
+        /// <summary>
+        /// Đăng ký tài khoản: tạo người dùng nhóm Khách hàng ở trạng thái "Chờ duyệt" – chưa đăng nhập được cho tới khi
+        /// quản trị viên duyệt (phân quyền vẫn do QTV quyết định, đúng thiết kế mục 3.1). Trả về null nếu thành công,
+        /// ngược lại là thông báo lỗi.
+        /// </summary>
+        public static string DangKy(string tenDangNhap, string hoTen, string donVi, string matKhau)
+        {
+            tenDangNhap = (tenDangNhap ?? "").Trim();
+            hoTen = (hoTen ?? "").Trim();
+            if (hoTen.Length == 0) return "Vui lòng nhập họ tên.";
+            if (!System.Text.RegularExpressions.Regex.IsMatch(tenDangNhap, @"^[A-Za-z0-9_.]{3,50}$"))
+                return "Tên đăng nhập 3–50 ký tự, chỉ gồm chữ không dấu, số, dấu _ hoặc dấu chấm.";
+            if ((matKhau ?? "").Length < 6) return "Mật khẩu tối thiểu 6 ký tự.";
+            if (QuanTriRepository.TenDangNhapDaCo(tenDangNhap)) return "Tên đăng nhập đã có người dùng.";
+            try
+            {
+                Db.Execute(@"INSERT INTO xebus.nguoidung (tendnhap, tenndung, donvi, idnhom, trangthai, matkhau)
+                             VALUES (@u, @ten, NULLIF(@dv, ''),
+                                     (SELECT idnhom FROM xebus.n_ngdung WHERE tennhom = 'Khách hàng'), @tt, @mk)",
+                    "@u", tenDangNhap, "@ten", hoTen, "@dv", (donVi ?? "").Trim(), "@tt", TrangThaiChoDuyet,
+                    "@mk", PasswordHasher.Hash(matKhau));
+                return null;
+            }
+            catch (Npgsql.PostgresException ex) when (ex.SqlState == "23505")
+            {
+                return "Tên đăng nhập đã có người dùng.";
+            }
+        }
+
         /// <summary>Đăng nhập bằng tài khoản. Trả về null nếu thành công, ngược lại là thông báo lỗi.</summary>
         public static string DangNhap(string tenDangNhap, string matKhau)
         {
@@ -36,6 +68,11 @@ namespace XeBus_GIS.Data
             {
                 GhiLichSu(id, tenDangNhap, KetQuaSaiMatKhau);
                 return "Tên đăng nhập hoặc mật khẩu không đúng.";
+            }
+            if (Db.Str(r, "trangthai") == TrangThaiChoDuyet)
+            {
+                GhiLichSu(id, tenDangNhap, KetQuaBiKhoa);
+                return "Tài khoản đang chờ quản trị viên duyệt.";
             }
             if (Db.Str(r, "trangthai") != "Hoạt động")
             {

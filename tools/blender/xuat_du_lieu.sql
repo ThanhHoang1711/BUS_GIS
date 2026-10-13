@@ -1,6 +1,6 @@
 -- Xuất dữ liệu thật (CHỈ SELECT) quanh trung tâm Hà Nội cho tools/blender/dung_canh.py.
 -- psql -At -v ON_ERROR_STOP=1 -f tools/blender/xuat_du_lieu.sql -o canh.json
--- Mặt nước được chia tam giác (ST_TriangulatePolygon, giữ lỗ/đảo) để Blender không nối sai polygon lõm.
+-- Mặt nước, cây xanh (sudungdata: park, grass, forest…) được chia tam giác (ST_TriangulatePolygon, giữ lỗ/đảo) để Blender không nối sai polygon lõm.
 WITH c AS (SELECT ST_Transform(ST_SetSRID(ST_MakePoint(105.8460,21.0300),4326),32648) g,
                   ST_X(ST_Transform(ST_SetSRID(ST_MakePoint(105.8460,21.0300),4326),32648)) x,
                   ST_Y(ST_Transform(ST_SetSRID(ST_MakePoint(105.8460,21.0300),4326),32648)) y),
@@ -12,6 +12,11 @@ SELECT json_build_object(
          FROM c, (SELECT (ST_Dump(ST_TriangulatePolygon(ST_MakeValid(ST_SimplifyPreserveTopology(ST_Intersection(ST_Transform(w.geom,32648), v.b),2))))).geom
                   FROM public.thuyhea w, vung v
                   WHERE ST_Intersects(ST_Transform(w.geom,32648), v.b) AND w.fclass IN ('water','riverbank','reservoir')) t),
+ 'xanh', (SELECT json_agg(ST_AsGeoJSON(ST_Translate(t.geom, -c.x, -c.y),1)::json->'coordinates')
+         FROM c, (SELECT (ST_Dump(ST_TriangulatePolygon(ST_MakeValid(ST_SimplifyPreserveTopology(ST_Intersection(ST_Transform(u.geom,32648), v.b),2))))).geom
+                  FROM public.sudungdata u, vung v
+                  WHERE ST_Intersects(ST_Transform(u.geom,32648), v.b)
+                    AND u.fclass IN ('park','grass','forest','recreation_ground','meadow','scrub','orchard','cemetery')) t),
  'duong', (SELECT json_agg(json_build_array(coalesce(d.loaiduong,''), ST_AsGeoJSON(ST_Translate(ST_Intersection(ST_Transform(d.geom,32648), v.b), -c.x, -c.y),1)::json->'coordinates'))
          FROM xebus.doanduong d, c, vung v WHERE ST_Intersects(ST_Transform(d.geom,32648), v.b)),
  'tuyen', (SELECT json_agg(json_build_array(t.matuyen, ST_AsGeoJSON(ST_Translate(ST_Intersection(ST_Transform(t.geom,32648), v.b), -c.x, -c.y),1)::json->'coordinates'))

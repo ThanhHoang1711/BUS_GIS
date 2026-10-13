@@ -124,6 +124,12 @@
     <Compile Include="UI\Controls\ThanhBuoc.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="Forms\UcDangKy.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Forms\UcDangKy.Designer.cs">
+      <DependentUpon>UcDangKy.cs</DependentUpon>
+    </Compile>
     <Compile Include="Forms\FrmDangNhap.cs">
       <SubType>Form</SubType>
     </Compile>

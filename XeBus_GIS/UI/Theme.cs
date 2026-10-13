@@ -42,6 +42,12 @@ namespace XeBus_GIS.UI
         public static readonly Color SidebarChon = ColorTranslator.FromHtml("#DCEFEA");      // mục đang chọn
         public static readonly Color SurfaceHover = ColorTranslator.FromHtml("#F1F4F7");
 
+        // ---- Trang đăng nhập / đăng ký: tông than chì trung tính (người dùng chọn bỏ xanh ngọc ở trang này) ----
+        public static readonly Color DnNhan = ColorTranslator.FromHtml("#111827");        // nút chính, logo, liên kết
+        public static readonly Color DnNhanHover = ColorTranslator.FromHtml("#1F2937");
+        public static readonly Color DnNhanNhan = ColorTranslator.FromHtml("#030712");
+        public static readonly Color DnPhu = Color.FromArgb(17, 24, 39);                  // lớp phủ trên video nền
+
         // ---- Màu ký hiệu bản đồ (mang nghĩa nghiệp vụ – giữ ổn định) ----
         public static readonly Color MapTram = Accent;
         public static readonly Color MapDuong = ColorTranslator.FromHtml("#94A3B8");
@@ -94,6 +100,8 @@ namespace XeBus_GIS.UI
                     nen = ColorTranslator.FromHtml("#DCFCE7"); chu = ColorTranslator.FromHtml("#15803D"); break;
                 case "Đề xuất":
                     nen = ColorTranslator.FromHtml("#FFEDD5"); chu = ColorTranslator.FromHtml("#C2410C"); break;
+                case "Chờ duyệt":
+                    nen = ColorTranslator.FromHtml("#FEF3C7"); chu = WarningText; break;
                 case "Tạm dừng":
                     nen = ColorTranslator.FromHtml("#FEF3C7"); chu = WarningText; break;
                 case "Ngừng hoạt động":

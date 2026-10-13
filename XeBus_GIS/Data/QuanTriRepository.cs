@@ -15,7 +15,11 @@ namespace XeBus_GIS.Data
     /// </summary>
     public static class QuanTriRepository
     {
-        public static readonly string[] TrangThaiNguoiDung = { "Hoạt động", "Khóa" };
+        public static readonly string[] TrangThaiNguoiDung = { "Hoạt động", "Khóa", NguoiDungRepository.TrangThaiChoDuyet };
+
+        /// <summary>Số tài khoản tự đăng ký đang chờ duyệt.</summary>
+        public static int SoChoDuyet() =>
+            Convert.ToInt32(Db.Scalar("SELECT count(*) FROM xebus.nguoidung WHERE trangthai = @tt", "@tt", NguoiDungRepository.TrangThaiChoDuyet));
 
         // ------------------------------------------------------------------
         // Người dùng

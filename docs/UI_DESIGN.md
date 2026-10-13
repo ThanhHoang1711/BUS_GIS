@@ -69,7 +69,8 @@ Font Segoe Fluent Icons (Win11) / Segoe MDL2 Assets (`UI/Icons.cs`), không emoj
 ## 4. Màn hình
 | Màn hình | Nội dung chính |
 |---|---|
-| Đăng nhập (`FrmDangNhap`, toàn màn hình) | trái: video nền 3D dựng bằng Blender từ dữ liệu thật (`NenVideo`, phủ tối, tôn trọng tắt hiệu ứng của Windows) + giới thiệu, 3 chức năng, số liệu thật; phải: cột form 480 px căn giữa; lỗi hiện ngay dưới ô mật khẩu |
+| Đăng nhập (`FrmDangNhap`, toàn màn hình) | trái: video sa bàn 3D ban ngày dựng bằng Blender từ dữ liệu thật (`NenVideo`, phủ than chì bên trái/dưới cho chữ, tôn trọng tắt hiệu ứng của Windows) + giới thiệu, 3 chức năng, số liệu thật; phải: cột form 480 px căn giữa, ô nhập `KhungO` dài bằng nhau, nút chính than chì `DnNhan` (trang này không dùng teal); lỗi hiện ngay dưới ô mật khẩu; liên kết "Đăng ký" |
+| Đăng ký (`UcDangKy`, cùng cột phải) | họ tên, đơn vị, tên đăng nhập, mật khẩu ×2 → tài khoản Khách hàng "Chờ duyệt"; QTV duyệt trong Quản trị |
 | Tổng quan (`UcTongQuan`) | 6 thẻ KPI (dữ liệu thật), biểu đồ 12 phường/xã nhiều trạm, bảng phường/xã cần chú ý, trạm cập nhật gần đây, % công trình được phục vụ theo loại; double-click → mở trên bản đồ |
 | Trạm (`UcTram`) | cột trái: tra cứu thuộc tính (thu/mở) · tra cứu không gian (vẽ vùng / phường / bán kính); **bảng kết quả nằm ngang dưới bản đồ** (khung dưới của FrmMain, kéo giãn được) có nhãn trạng thái · sửa |
 | Tuyến (`UcTuyen`) | danh sách tuyến có ô màu đúng màu trên bản đồ · trạm theo thứ tự (số trên bản đồ) · sửa, gán trạm |

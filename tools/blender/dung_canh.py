@@ -7,13 +7,15 @@ Chạy (không mở giao diện Blender):
 canh.json sinh bằng tools/blender/xuat_du_lieu.sql (chỉ SELECT): toạ độ mét UTM 48N (EPSG:32648) đã trừ tâm
 (105.846, 21.030 – quanh Hồ Gươm), bán kính 3,5 km:
     nha   [gid, type, polygon]   – public.nha (OSM building)
-    nuoc  [polygon|multipolygon] – public.thuyhea (water, riverbank, reservoir)
+    nuoc  [tam giác]             – public.thuyhea (water, riverbank, reservoir) – đã chia tam giác trong PostGIS
+    xanh  [tam giác]             – public.sudungdata (park, grass, forest…)
     duong [loaiduong, line]      – xebus.doanduong
     tuyen [matuyen, line]        – xebus.tuyenbuyt (M01…)
     tram  [x, y]                 – xebus.trambuyt
 
-Phong cách: thành phố tông tối xanh đêm, tuyến buýt phát sáng đúng màu tuyến trong app (Theme.MauTuyen),
-trạm nhấp nháy màu teal, các chấm "xe buýt" chạy dọc tuyến, camera lượn chậm qua lại (vòng lặp liền mạch).
+Phong cách: sa bàn kiến trúc ban ngày – nhà trắng ngà, bóng nắng mềm, mặt nước xanh tự nhiên, mảng cây xanh,
+tuyến buýt đúng màu tuyến trong app (Theme.MauTuyen, không phát sáng), trạm là cọc xám than, xe buýt chạy dọc tuyến,
+camera lượn chậm qua lại (vòng lặp liền mạch). Không hậu kỳ làm mờ – ảnh nét.
 """
 import bpy
 import bmesh
@@ -26,8 +28,8 @@ argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
 DUONG_DAN_JSON = argv[0]
 THU_MUC_RA = argv[1]
 SO_KHUNG = int(argv[2]) if len(argv) > 2 else 192
-RONG = int(argv[3]) if len(argv) > 3 else 960
-CAO = int(argv[4]) if len(argv) > 4 else 660
+RONG = int(argv[3]) if len(argv) > 3 else 1280
+CAO = int(argv[4]) if len(argv) > 4 else 880
 
 random.seed(20261013)
 
@@ -42,7 +44,6 @@ def hex_rgb(h, a=1.0):
 
 # Màu tuyến – trùng Theme.MauTuyen (M01 = phần tử 0 …)
 MAU_TUYEN = ["#2563EB", "#DC2626", "#16A34A", "#9333EA", "#EA580C", "#0891B2", "#DB2777", "#65A30D"]
-MAU_TEAL = "#2DD4BF"
 
 with open(DUONG_DAN_JSON, encoding="utf-8") as f:
     DL = json.load(f)
@@ -61,19 +62,25 @@ sc.render.image_settings.file_format = "JPEG"
 sc.render.image_settings.quality = 82
 sc.render.filepath = THU_MUC_RA.rstrip("/\\") + "/k_"
 sc.view_settings.view_transform = "AgX" if "AgX" in [v.identifier for v in sc.view_settings.bl_rna.properties["view_transform"].enum_items] else "Filmic"
-sc.view_settings.look = "None"
 try:
     sc.eevee.taa_render_samples = 24
+    sc.eevee.use_raytracing = True          # bóng tiếp xúc / AO màn hình (Eevee Next)
+    sc.eevee.ray_tracing_options.resolution_scale = "2"
+    sc.eevee.use_shadows = True
+except Exception:
+    pass
+try:
+    sc.view_settings.look = "AgX - Medium High Contrast"
 except Exception:
     pass
 
-# nền trời: xanh đêm
+# nền trời: sáng ban ngày, hơi xám xanh (cũng là ánh sáng môi trường)
 world = bpy.data.worlds.new("Troi")
 sc.world = world
 world.use_nodes = True
 bg = world.node_tree.nodes["Background"]
-bg.inputs[0].default_value = hex_rgb("#08131B")
-bg.inputs[1].default_value = 1.0
+bg.inputs[0].default_value = hex_rgb("#D9D6CF")
+bg.inputs[1].default_value = 0.45
 
 
 def vat_lieu(ten, mau, phat_sang=0.0, mau_phat=None, nham=0.85, kim_loai=0.0):
@@ -89,18 +96,14 @@ def vat_lieu(ten, mau, phat_sang=0.0, mau_phat=None, nham=0.85, kim_loai=0.0):
     return m
 
 
-VL_DAT = vat_lieu("Dat", "#0B1821", nham=0.95)
-VL_NUOC = vat_lieu("Nuoc", "#0C3440", phat_sang=0.25, mau_phat="#0E7490", nham=0.15, kim_loai=0.2)
-VL_DUONG = vat_lieu("Duong", "#16303B", phat_sang=0.9, mau_phat="#1E5A66", nham=0.6)
-VL_TRAM = vat_lieu("Tram", MAU_TEAL, phat_sang=6.0, mau_phat=MAU_TEAL)
+VL_DAT = vat_lieu("Dat", "#D8D3C9", nham=0.95)
+VL_NUOC = vat_lieu("Nuoc", "#6F9DBD", nham=0.2, kim_loai=0.05)
+VL_XANH = vat_lieu("Xanh", "#9DBB7F", nham=0.95)
+VL_DUONG = vat_lieu("Duong", "#AFA89C", nham=0.8)
+VL_TRAM = vat_lieu("Tram", "#1F2937", nham=0.5)
 
-# toà nhà: 3 sắc độ để mặt phố không phẳng màu
-VL_NHA = [vat_lieu("Nha%d" % i, c, nham=0.75) for i, c in enumerate(["#1A2733", "#202F3D", "#273848"])]
-# đỉnh nhà sáng nhẹ (cửa sổ/đèn) – trộn bằng chính màu phát sáng thấp
-for m, s in zip(VL_NHA, (0.015, 0.025, 0.04)):
-    p = m.node_tree.nodes["Principled BSDF"]
-    p.inputs["Emission Color"].default_value = hex_rgb("#A5F3FC")
-    p.inputs["Emission Strength"].default_value = s
+# toà nhà: 3 sắc trắng ngà để mặt phố không phẳng màu
+VL_NHA = [vat_lieu("Nha%d" % i, c, nham=0.9) for i, c in enumerate(["#FAF9F6", "#F2F0EB", "#E8E5DF"])]
 
 
 def lien_ket(obj):
@@ -207,12 +210,28 @@ for toa_do in DL.get("nuoc") or []:
     polys = toa_do if isinstance(toa_do[0][0][0], list) else [toa_do]
     for poly in polys:
         if poly:
-            them_khoi(bmn, poly[0], 0.4, 0.4)
+            them_khoi(bmn, poly[0], 2.0, 2.0)
 me = bpy.data.meshes.new("Nuoc")
 bmn.to_mesh(me)
 bmn.free()
 o = lien_ket(bpy.data.objects.new("Nuoc", me))
 o.data.materials.append(VL_NUOC)
+
+
+# ---------------------------------------------------------------- cây xanh (tam giác)
+bmx = bmesh.new()
+for toa_do in DL.get("xanh") or []:
+    if not toa_do:
+        continue
+    polys = toa_do if isinstance(toa_do[0][0][0], list) else [toa_do]
+    for poly in polys:
+        if poly:
+            them_khoi(bmx, poly[0], 1.2, 1.2)
+me = bpy.data.meshes.new("Xanh")
+bmx.to_mesh(me)
+bmx.free()
+o = lien_ket(bpy.data.objects.new("Xanh", me))
+o.data.materials.append(VL_XANH)
 
 
 # ---------------------------------------------------------------- đường, tuyến: curve có bề dày
@@ -243,41 +262,35 @@ def tao_curve(ten, polylines, z, be_rong, vat):
 tat_ca_duong = []
 for loai, toa_do in DL.get("duong") or []:
     tat_ca_duong += cac_duong(toa_do)
-tao_curve("Duong", tat_ca_duong, 0.6, 2.2, VL_DUONG)
+tao_curve("Duong", tat_ca_duong, 3.0, 3.0, VL_DUONG)
 
 xe_chay = []   # (đối tượng chấm xe, polyline dài nhất của tuyến, lệch pha)
 for ma, toa_do in DL.get("tuyen") or []:
     so = int("".join(ch for ch in ma if ch.isdigit()) or "1")
     mau = MAU_TUYEN[(so - 1) % len(MAU_TUYEN)]
-    vl = vat_lieu("Tuyen_" + ma, mau, phat_sang=9.0, mau_phat=mau, nham=0.4)
+    vl = vat_lieu("Tuyen_" + ma, mau, nham=0.45)
     pls = cac_duong(toa_do)
-    tao_curve("Tuyen_" + ma, pls, 3.0, 7.0, vl)
+    tao_curve("Tuyen_" + ma, pls, 6.0, 9.0, vl)
     if pls:
         dai = max(pls, key=len)
-        vl_xe = vat_lieu("Xe_" + ma, "#FFFFFF", phat_sang=20.0, mau_phat=mau)
+        vl_xe = vat_lieu("Xe_" + ma, mau, nham=0.35)
         for k in range(3):
-            bpy.ops.mesh.primitive_uv_sphere_add(radius=18, segments=16, ring_count=8)
+            bpy.ops.mesh.primitive_cube_add(size=1)
             xe = bpy.context.active_object
+            xe.scale = (34, 34, 14)
             xe.data.materials.append(vl_xe)
             xe_chay.append((xe, dai, k / 3.0))
 
-# ---------------------------------------------------------------- trạm: trụ nhỏ phát sáng, nhấp nháy
+# ---------------------------------------------------------------- trạm: cọc nhỏ xám than
 bmt = bmesh.new()
 for x, y in DL.get("tram") or []:
-    m = bmesh.ops.create_cone(bmt, cap_ends=True, segments=12, radius1=11, radius2=11, depth=10)
-    bmesh.ops.translate(bmt, verts=m["verts"], vec=(x, y, 6))
+    m = bmesh.ops.create_cone(bmt, cap_ends=True, segments=12, radius1=10, radius2=10, depth=26)
+    bmesh.ops.translate(bmt, verts=m["verts"], vec=(x, y, 13))
 me = bpy.data.meshes.new("Tram")
 bmt.to_mesh(me)
 bmt.free()
 o = lien_ket(bpy.data.objects.new("Tram", me))
 o.data.materials.append(VL_TRAM)
-
-# nhấp nháy trạm: cường độ phát sáng theo sin, chu kỳ chia hết số khung (lặp liền)
-p_tram = VL_TRAM.node_tree.nodes["Principled BSDF"].inputs["Emission Strength"]
-for f in range(1, SO_KHUNG + 1, 4):
-    p_tram.default_value = 4.0 + 3.0 * (0.5 + 0.5 * math.sin(2 * math.pi * 4 * (f - 1) / SO_KHUNG))
-    p_tram.keyframe_insert("default_value", frame=f)
-
 
 # ---------------------------------------------------------------- xe chạy dọc tuyến (vị trí tính sẵn từng khung)
 def diem_theo_ti_le(pl, t):
@@ -301,15 +314,17 @@ for xe, pl, lech in xe_chay:
         xe.location = (x, y, 14)
         xe.keyframe_insert("location", frame=f)
 
-# ---------------------------------------------------------------- ánh sáng
-bpy.ops.object.light_add(type="SUN", rotation=(math.radians(58), 0, math.radians(-35)))
+# ---------------------------------------------------------------- ánh sáng: nắng chiều sớm, bóng mềm
+bpy.ops.object.light_add(type="SUN", rotation=(math.radians(58), 0, math.radians(-40)))
 mt = bpy.context.active_object
-mt.data.energy = 1.6
-mt.data.color = (0.75, 0.85, 1.0)
-bpy.ops.object.light_add(type="SUN", rotation=(math.radians(70), 0, math.radians(150)))
+mt.data.energy = 5.0
+mt.data.color = (1.0, 0.96, 0.9)
+mt.data.angle = math.radians(2.5)
+bpy.ops.object.light_add(type="SUN", rotation=(math.radians(65), 0, math.radians(140)))
 mt2 = bpy.context.active_object
-mt2.data.energy = 0.5
-mt2.data.color = (1.0, 0.8, 0.6)
+mt2.data.energy = 0.8
+mt2.data.color = (0.85, 0.9, 1.0)
+mt2.data.use_shadow = False
 
 # ---------------------------------------------------------------- camera lượn qua lại (vòng lặp liền)
 bpy.ops.object.empty_add(location=(150, -100, 0))
@@ -317,13 +332,14 @@ dich = bpy.context.active_object
 bpy.ops.object.camera_add()
 cam = bpy.context.active_object
 sc.camera = cam
-cam.data.lens = 32
+cam.data.lens = 30
+cam.data.clip_start = 20
 cam.data.clip_end = 20000
 rang = cam.constraints.new("TRACK_TO")
 rang.target = dich
 rang.track_axis = "TRACK_NEGATIVE_Z"
 rang.up_axis = "UP_Y"
-BAN_KINH, DO_CAO = 2500, 2050
+BAN_KINH, DO_CAO = 1950, 1350
 for f in range(1, SO_KHUNG + 1, 2):
     pha = 2 * math.pi * (f - 1) / SO_KHUNG
     goc = math.radians(-60 + 16 * math.sin(pha))
@@ -337,29 +353,8 @@ for o in [cam] + [x[0] for x in xe_chay]:
             for kp in fc.keyframe_points:
                 kp.interpolation = "LINEAR"
 
-# ---------------------------------------------------------------- hậu kỳ: glow + mờ nhẹ + sương xa
-sc.use_nodes = True
-cay = sc.node_tree
-for n in list(cay.nodes):
-    cay.nodes.remove(n)
-vao = cay.nodes.new("CompositorNodeRLayers")
-glow = cay.nodes.new("CompositorNodeGlare")
-glow.glare_type = "FOG_GLOW"
-try:
-    glow.quality = "HIGH"
-    glow.size = 8
-    glow.threshold = 0.6
-    glow.mix = 0.15
-except Exception:
-    pass
-mo = cay.nodes.new("CompositorNodeBlur")
-mo.filter_type = "GAUSS"
-mo.size_x = max(1, RONG // 320)
-mo.size_y = max(1, RONG // 320)
-ra = cay.nodes.new("CompositorNodeComposite")
-cay.links.new(vao.outputs["Image"], glow.inputs["Image"])
-cay.links.new(glow.outputs["Image"], mo.inputs["Image"])
-cay.links.new(mo.outputs["Image"], ra.inputs["Image"])
+# không hậu kỳ (ảnh nét, không glow/blur)
+sc.use_nodes = False
 
 if len(argv) > 5 and argv[5] == "thu":
     # chỉ render 1 khung để xem thử bố cục

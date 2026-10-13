@@ -1,4 +1,4 @@
-namespace XeBus_GIS.Forms
+﻿namespace XeBus_GIS.Forms
 {
     partial class FrmDangNhap
     {
@@ -28,6 +28,8 @@ namespace XeBus_GIS.Forms
             this.btnDangNhap = new System.Windows.Forms.Button();
             this.lnkKhach = new System.Windows.Forms.LinkLabel();
             this.lblKetNoi = new System.Windows.Forms.Label();
+            this.lnkDangKy = new System.Windows.Forms.LinkLabel();
+            this.ucDangKy = new XeBus_GIS.Forms.UcDangKy();
             this.pnlForm.SuspendLayout();
             this.pnlKhung.SuspendLayout();
             this.SuspendLayout();
@@ -41,7 +43,9 @@ namespace XeBus_GIS.Forms
             //
             // pnlForm (cột đăng nhập bên phải)
             //
+            this.pnlForm.AutoScroll = true;
             this.pnlForm.Controls.Add(this.pnlKhung);
+            this.pnlForm.Controls.Add(this.ucDangKy);
             this.pnlForm.Controls.Add(this.lblKetNoi);
             this.pnlForm.Dock = System.Windows.Forms.DockStyle.Right;
             this.pnlForm.Name = "pnlForm";
@@ -60,9 +64,10 @@ namespace XeBus_GIS.Forms
             this.pnlKhung.Controls.Add(this.lblLoi);
             this.pnlKhung.Controls.Add(this.btnDangNhap);
             this.pnlKhung.Controls.Add(this.lnkKhach);
+            this.pnlKhung.Controls.Add(this.lnkDangKy);
             this.pnlKhung.Location = new System.Drawing.Point(60, 170);
             this.pnlKhung.Name = "pnlKhung";
-            this.pnlKhung.Size = new System.Drawing.Size(360, 420);
+            this.pnlKhung.Size = new System.Drawing.Size(360, 404);
             this.pnlKhung.TabIndex = 0;
             //
             // lblDangNhap
@@ -89,7 +94,7 @@ namespace XeBus_GIS.Forms
             //
             // txtTenDN
             //
-            this.txtTenDN.Location = new System.Drawing.Point(0, 120);
+            this.txtTenDN.Location = new System.Drawing.Point(0, 118);
             this.txtTenDN.Name = "txtTenDN";
             this.txtTenDN.Size = new System.Drawing.Size(360, 27);
             this.txtTenDN.TabIndex = 2;
@@ -97,7 +102,7 @@ namespace XeBus_GIS.Forms
             // lblMatKhau
             //
             this.lblMatKhau.AutoSize = true;
-            this.lblMatKhau.Location = new System.Drawing.Point(0, 168);
+            this.lblMatKhau.Location = new System.Drawing.Point(0, 170);
             this.lblMatKhau.Name = "lblMatKhau";
             this.lblMatKhau.TabIndex = 3;
             this.lblMatKhau.Text = "Mật khẩu";
@@ -106,21 +111,21 @@ namespace XeBus_GIS.Forms
             //
             this.txtMatKhau.Location = new System.Drawing.Point(0, 192);
             this.txtMatKhau.Name = "txtMatKhau";
-            this.txtMatKhau.Size = new System.Drawing.Size(318, 27);
+            this.txtMatKhau.Size = new System.Drawing.Size(360, 27);
             this.txtMatKhau.TabIndex = 4;
             this.txtMatKhau.UseSystemPasswordChar = true;
             //
             // btnHienMK
             //
-            this.btnHienMK.Location = new System.Drawing.Point(322, 191);
+            this.btnHienMK.Location = new System.Drawing.Point(0, 192);
             this.btnHienMK.Name = "btnHienMK";
-            this.btnHienMK.Size = new System.Drawing.Size(38, 29);
+            this.btnHienMK.Size = new System.Drawing.Size(36, 27);
             this.btnHienMK.TabIndex = 5;
             this.btnHienMK.TabStop = false;
             //
             // lblLoi
             //
-            this.lblLoi.Location = new System.Drawing.Point(0, 228);
+            this.lblLoi.Location = new System.Drawing.Point(0, 236);
             this.lblLoi.Name = "lblLoi";
             this.lblLoi.Size = new System.Drawing.Size(360, 40);
             this.lblLoi.TabIndex = 6;
@@ -128,7 +133,7 @@ namespace XeBus_GIS.Forms
             //
             // btnDangNhap
             //
-            this.btnDangNhap.Location = new System.Drawing.Point(0, 276);
+            this.btnDangNhap.Location = new System.Drawing.Point(0, 282);
             this.btnDangNhap.Name = "btnDangNhap";
             this.btnDangNhap.Size = new System.Drawing.Size(360, 46);
             this.btnDangNhap.TabIndex = 7;
@@ -136,7 +141,7 @@ namespace XeBus_GIS.Forms
             //
             // lnkKhach
             //
-            this.lnkKhach.Location = new System.Drawing.Point(0, 338);
+            this.lnkKhach.Location = new System.Drawing.Point(0, 342);
             this.lnkKhach.Name = "lnkKhach";
             this.lnkKhach.Size = new System.Drawing.Size(360, 24);
             this.lnkKhach.TabIndex = 8;
@@ -144,12 +149,30 @@ namespace XeBus_GIS.Forms
             this.lnkKhach.Text = "Tiếp tục với tư cách khách (chỉ xem, tra cứu)";
             this.lnkKhach.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             //
+            // lnkDangKy
+            //
+            this.lnkDangKy.Location = new System.Drawing.Point(0, 374);
+            this.lnkDangKy.Name = "lnkDangKy";
+            this.lnkDangKy.Size = new System.Drawing.Size(360, 24);
+            this.lnkDangKy.TabIndex = 9;
+            this.lnkDangKy.TabStop = true;
+            this.lnkDangKy.Text = "Chưa có tài khoản? Đăng ký";
+            this.lnkDangKy.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            //
+            // ucDangKy (đăng ký – ẩn cho tới khi bấm "Đăng ký")
+            //
+            this.ucDangKy.Location = new System.Drawing.Point(60, 130);
+            this.ucDangKy.Name = "ucDangKy";
+            this.ucDangKy.Size = new System.Drawing.Size(360, 564);
+            this.ucDangKy.TabIndex = 1;
+            this.ucDangKy.Visible = false;
+            //
             // lblKetNoi
             //
             this.lblKetNoi.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.lblKetNoi.Name = "lblKetNoi";
             this.lblKetNoi.Size = new System.Drawing.Size(480, 48);
-            this.lblKetNoi.TabIndex = 9;
+            this.lblKetNoi.TabIndex = 10;
             this.lblKetNoi.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             //
             // FrmDangNhap
@@ -188,5 +211,7 @@ namespace XeBus_GIS.Forms
         private System.Windows.Forms.Button btnDangNhap;
         private System.Windows.Forms.LinkLabel lnkKhach;
         private System.Windows.Forms.Label lblKetNoi;
+        private System.Windows.Forms.LinkLabel lnkDangKy;
+        private XeBus_GIS.Forms.UcDangKy ucDangKy;
     }
 }

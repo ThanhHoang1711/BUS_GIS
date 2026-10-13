@@ -66,6 +66,65 @@ namespace XeBus_GIS.UI
             GanTrangThai(b, KieuNut.Chinh, Theme.Accent, Color.White, Theme.Accent, 0);
         }
 
+        /// <summary>Nút chính với bộ màu riêng (vd trang đăng nhập dùng tông than chì thay Accent).</summary>
+        public static void NutChinh(Button b, Color nen, Color nenHover, Color nenNhan)
+        {
+            NutCoBan(b);
+            b.Font = Theme.FontDam;
+            b.FlatAppearance.MouseOverBackColor = nenHover;
+            b.FlatAppearance.MouseDownBackColor = nenNhan;
+            GanTrangThai(b, KieuNut.Chinh, nen, Color.White, nen, 0);
+        }
+
+        /// <summary>
+        /// Bọc TextBox trong khung tự vẽ cao 38 px (viền mảnh, đổi màu khi đang nhập), tuỳ chọn một nút nằm trong khung
+        /// ở mép phải (vd hiện mật khẩu) – các ô có/không có nút đều dài bằng nhau. Khung thay vị trí của TextBox.
+        /// </summary>
+        public static Panel KhungO(TextBox t, Color mauFocus, Control nutPhai = null)
+        {
+            var cha = t.Parent;
+            int le = Dp(10), cao = Dp(38);
+            var k = new Panel
+            {
+                Bounds = new Rectangle(t.Left, t.Top, t.Width, cao),
+                BackColor = Theme.Surface,
+                Anchor = t.Anchor,
+                TabIndex = t.TabIndex,
+                Cursor = Cursors.IBeam,
+            };
+            int chiSo = cha.Controls.GetChildIndex(t);
+            cha.Controls.Add(k);
+            cha.Controls.SetChildIndex(k, chiSo);
+            t.BorderStyle = BorderStyle.None;
+            t.Parent = k;
+            int rongNut = 0;
+            if (nutPhai != null)
+            {
+                rongNut = Dp(34);
+                nutPhai.Parent = k;
+                nutPhai.Bounds = new Rectangle(k.Width - rongNut - Dp(3), Dp(3), rongNut, cao - Dp(6));
+                nutPhai.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+                nutPhai.BackColor = Theme.Surface;
+            }
+            t.Bounds = new Rectangle(le, (cao - t.Height) / 2, k.Width - le - (rongNut > 0 ? rongNut + Dp(6) : le), t.Height);
+            t.Anchor = AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top;
+            bool dangNhap = false;
+            t.GotFocus += (s, e) => { dangNhap = true; k.Invalidate(); };
+            t.LostFocus += (s, e) => { dangNhap = false; k.Invalidate(); };
+            k.Click += (s, e) => t.Focus();
+            k.Paint += (s, e) =>
+            {
+                var g = e.Graphics;
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                var r = new RectangleF(0.5f, 0.5f, k.Width - 1.5f, k.Height - 1.5f);
+                using (var path = DuongBoGoc(r, Dp(6)))
+                using (var pen = new Pen(dangNhap ? mauFocus : Theme.BorderStrong, dangNhap ? 1.6f : 1f))
+                    g.DrawPath(pen, path);
+                g.SmoothingMode = SmoothingMode.None;
+            };
+            return k;
+        }
+
         /// <summary>Nút phụ (nền trắng, viền).</summary>
         public static void NutPhu(Button b)
         {

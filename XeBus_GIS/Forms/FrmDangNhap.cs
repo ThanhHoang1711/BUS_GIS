@@ -17,10 +17,20 @@ namespace XeBus_GIS.Forms
 
             btnDangNhap.Click += async (s, e) => await DangNhapAsync();
             lnkKhach.LinkClicked += async (s, e) => await VaoVoiTuCachKhachAsync();
+            lnkDangKy.LinkClicked += (s, e) => HienDangKy(true);
+            ucDangKy.QuayLai += () => HienDangKy(false);
+            ucDangKy.DaGui += tenDN =>
+            {
+                HienDangKy(false);
+                txtTenDN.Text = tenDN;
+                txtMatKhau.Clear();
+                BaoThanhCong("Đã gửi đăng ký. Bạn đăng nhập được sau khi quản trị viên duyệt tài khoản.");
+            };
             btnHienMK.Click += (s, e) =>
             {
                 txtMatKhau.UseSystemPasswordChar = !txtMatKhau.UseSystemPasswordChar;
-                UiHelper.DatTrangThaiBat(btnHienMK, !txtMatKhau.UseSystemPasswordChar);
+                btnHienMK.Text = txtMatKhau.UseSystemPasswordChar ? Icons.Mat : Icons.AnMat;
+                txtMatKhau.Focus();
             };
             txtTenDN.TextChanged += (s, e) => lblLoi.Visible = false;
             txtMatKhau.TextChanged += (s, e) => lblLoi.Visible = false;
@@ -45,6 +55,7 @@ namespace XeBus_GIS.Forms
             pnlKhung.BackColor = Theme.Surface;
             pnlForm.Width = UiHelper.Dp(480);
             pnlForm.Resize += (s, e) => CanGiuaKhung();
+            ucDangKy.KhoiTao();
             CanGiuaKhung();
 
             lblDangNhap.Font = new Font("Segoe UI Semibold", 20f);
@@ -54,18 +65,24 @@ namespace XeBus_GIS.Forms
             txtTenDN.Font = txtMatKhau.Font = new Font("Segoe UI", 11.25f);
             UiHelper.NhanTruong(lblTenDN);
             UiHelper.NhanTruong(lblMatKhau);
+            // ô nhập có khung riêng; nút hiện mật khẩu nằm TRONG khung ô mật khẩu ⇒ hai ô dài bằng nhau
             UiHelper.NutIcon(btnHienMK, Icons.Mat, "Hiện / ẩn mật khẩu", 11f);
-            btnHienMK.FlatAppearance.BorderSize = 1;
-            btnHienMK.FlatAppearance.BorderColor = Theme.Border;
-            btnHienMK.Top = txtMatKhau.Top;
-            btnHienMK.Height = txtMatKhau.Height;
-            UiHelper.NutChinh(btnDangNhap);
+            txtMatKhau.Width = txtTenDN.Width;
+            UiHelper.KhungO(txtTenDN, Theme.DnNhan);
+            UiHelper.KhungO(txtMatKhau, Theme.DnNhan, btnHienMK);
+
+            // trang đăng nhập dùng tông than chì (không xanh ngọc)
+            UiHelper.NutChinh(btnDangNhap, Theme.DnNhan, Theme.DnNhanHover, Theme.DnNhanNhan);
             btnDangNhap.Font = new Font("Segoe UI Semibold", 10.5f);
             lblLoi.ForeColor = Theme.Danger;
-            lnkKhach.LinkColor = Theme.Accent;
-            lnkKhach.ActiveLinkColor = Theme.AccentHover;
-            lnkKhach.Cursor = Cursors.Hand;
-            lnkKhach.UseMnemonic = false;
+            foreach (var l in new[] { lnkKhach, lnkDangKy })
+            {
+                l.LinkColor = Theme.DnNhan;
+                l.ActiveLinkColor = Theme.DnNhanHover;
+                l.Cursor = Cursors.Hand;
+                l.UseMnemonic = false;
+            }
+            lnkDangKy.LinkArea = new LinkArea(lnkDangKy.Text.IndexOf("Đăng ký", StringComparison.Ordinal), "Đăng ký".Length);
             lblKetNoi.Font = Theme.FontNhan;
             lblKetNoi.ForeColor = Theme.Muted;
             pnlForm.Paint += (s, e) =>
@@ -76,8 +93,24 @@ namespace XeBus_GIS.Forms
 
         private void CanGiuaKhung()
         {
-            pnlKhung.Left = Math.Max(UiHelper.Dp(24), (pnlForm.Width - pnlKhung.Width) / 2);
-            pnlKhung.Top = Math.Max(UiHelper.Dp(24), (pnlForm.Height - lblKetNoi.Height - pnlKhung.Height) / 2);
+            foreach (Control k in new Control[] { pnlKhung, ucDangKy })
+            {
+                k.Left = Math.Max(UiHelper.Dp(24), (pnlForm.ClientSize.Width - k.Width) / 2);
+                k.Top = Math.Max(UiHelper.Dp(24), (pnlForm.ClientSize.Height - lblKetNoi.Height - k.Height) / 2);
+            }
+        }
+
+        /// <summary>Chuyển cột phải giữa đăng nhập và đăng ký.</summary>
+        private void HienDangKy(bool dangKy)
+        {
+            pnlKhung.Visible = !dangKy;
+            ucDangKy.Visible = dangKy;
+            AcceptButton = dangKy ? null : btnDangNhap;
+            Text = (dangKy ? "Đăng ký" : "Đăng nhập") + " – XeBus GIS";
+            lblLoi.Visible = false;
+            CanGiuaKhung();
+            if (dangKy) ucDangKy.BatDau();
+            else txtTenDN.Focus();
         }
 
         /// <summary>Ba nhóm chức năng chính của hệ thống (đúng với các màn hình đã có).</summary>
@@ -120,6 +153,14 @@ namespace XeBus_GIS.Forms
 
         private void BaoLoi(string noiDung)
         {
+            lblLoi.ForeColor = Theme.Danger;
+            lblLoi.Text = noiDung;
+            lblLoi.Visible = true;
+        }
+
+        private void BaoThanhCong(string noiDung)
+        {
+            lblLoi.ForeColor = Theme.Success;
             lblLoi.Text = noiDung;
             lblLoi.Visible = true;
         }
