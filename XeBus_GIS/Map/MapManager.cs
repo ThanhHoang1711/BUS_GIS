@@ -69,6 +69,8 @@ namespace XeBus_GIS.Map
             Map.SendMouseMove = true;
             Map.CursorMode = tkCursorMode.cmPan;
             Map.BackColor = Theme.Background;
+            // ký hiệu trạm hình xe buýt đổi cỡ theo tỷ lệ
+            Map.ExtentsChanged += (s, e) => CapNhatKyHieuTram(false);
             ToanCanh();
 
             DangKy(RanhGioi, "Ranh giới Hà Nội", ShpfileType.SHP_POLYGON, BanDoRepository.SqlRanhGioi, sf =>
@@ -127,6 +129,13 @@ namespace XeBus_GIS.Map
                 ThemLoaiDiem(sf, "Bến xe", "BX", Theme.MapBenXe, 11, tkDefaultPointSymbol.dpsSquare);
                 ThemLoaiDiem(sf, "Đề xuất", "DX", Theme.MapTramDeXuat, 10, tkDefaultPointSymbol.dpsCircle);
                 ThemLoaiDiem(sf, "Ngừng hoạt động", "NG", Theme.MapTramNgung, 7, tkDefaultPointSymbol.dpsCircle);
+                _kyHieuTram.Clear();
+                _kyHieuTram.Add((sf.DefaultDrawingOptions, Theme.MapTram, 7f, tkDefaultPointSymbol.dpsCircle));
+                _kyHieuTram.Add((sf.Categories.get_Item(0).DrawingOptions, Theme.MapBenXe, 11f, tkDefaultPointSymbol.dpsSquare));
+                _kyHieuTram.Add((sf.Categories.get_Item(1).DrawingOptions, Theme.MapTramDeXuat, 10f, tkDefaultPointSymbol.dpsCircle));
+                _kyHieuTram.Add((sf.Categories.get_Item(2).DrawingOptions, Theme.MapTramNgung, 7f, tkDefaultPointSymbol.dpsCircle));
+                _coKyHieuTram = -1;
+                CapNhatKyHieuTram(true);
             });
         }
 
@@ -198,6 +207,58 @@ namespace XeBus_GIS.Map
             o.LineColor = Theme.Ole(Color.White);
             o.LineWidth = 1f;
             o.LineVisible = true;
+        }
+
+        // ---- Ký hiệu trạm hình xe buýt theo tỷ lệ ----
+        private readonly List<(ShapeDrawingOptions o, Color mau, float coCham, tkDefaultPointSymbol hinh)> _kyHieuTram =
+            new List<(ShapeDrawingOptions, Color, float, tkDefaultPointSymbol)>();
+        private int _coKyHieuTram = -1;
+
+        /// <summary>
+        /// Đổi ký hiệu lớp trạm theo tỷ lệ hiện tại: toàn thành phố = chấm (tránh chồng chéo), phóng to dần = biểu tượng
+        /// xe buýt 14 → 30 px (KyHieuTram). Chỉ vẽ lại khi đổi bậc cỡ.
+        /// </summary>
+        private void CapNhatKyHieuTram(bool batBuoc)
+        {
+            if (_kyHieuTram.Count == 0) return;
+            int co = KyHieuTram.CoTheoTyLe(Map.CurrentScale);
+            if (co == _coKyHieuTram && !batBuoc) return;
+            _coKyHieuTram = co;
+            foreach (var (o, mau, coCham, hinh) in _kyHieuTram)
+            {
+                MapWinGIS.Image anh = co > 0 ? KyHieuTram.Anh(mau, Color.White, co) : null;
+                if (anh == null)
+                {
+                    o.PointType = tkPointSymbolType.ptSymbolStandard;
+                    KieuDiem(o, mau, coCham, hinh);
+                }
+                else
+                {
+                    o.PointType = tkPointSymbolType.ptSymbolPicture;
+                    o.Picture = anh;
+                    o.PictureScaleX = o.PictureScaleY = 1;
+                }
+            }
+            // trạm đang chọn: cùng hình, nền vàng, lớn hơn một chút
+            if (_lop.TryGetValue(Tram, out var l) && l.Sf != null)
+            {
+                var sel = l.Sf.SelectionDrawingOptions;
+                var anhChon = co > 0 ? KyHieuTram.Anh(Theme.MapChon, Theme.Primary, co + UiHelper.Dp(6)) : null;
+                if (anhChon == null)
+                {
+                    sel.PointType = tkPointSymbolType.ptSymbolStandard;
+                    KieuDiem(sel, Theme.MapChon, 13, tkDefaultPointSymbol.dpsCircle);
+                    sel.LineColor = Theme.Ole(Theme.Primary);
+                    sel.LineWidth = 2;
+                }
+                else
+                {
+                    sel.PointType = tkPointSymbolType.ptSymbolPicture;
+                    sel.Picture = anhChon;
+                    sel.PictureScaleX = sel.PictureScaleY = 1;
+                }
+            }
+            if (!batBuoc) Map.Redraw();
         }
 
         private static void ThemLoaiDiem(Shapefile sf, string ten, string kieu, Color mau, float coDiem, tkDefaultPointSymbol hinh)

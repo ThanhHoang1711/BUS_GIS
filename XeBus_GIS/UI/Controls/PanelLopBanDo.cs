@@ -7,7 +7,7 @@ using System.Windows.Forms;
 
 namespace XeBus_GIS.UI.Controls
 {
-    public enum KieuKyHieu { Tron, Vuong, TamGiac, Thoi, ChuThap, Duong, DuongDut, DuongCham, Vung }
+    public enum KieuKyHieu { Tron, Vuong, TamGiac, Thoi, ChuThap, Duong, DuongDut, DuongCham, Vung, XeBus }
 
     /// <summary>Một mục chú giải (ký hiệu + tên).</summary>
     public class ChuGiai
@@ -253,6 +253,11 @@ namespace XeBus_GIS.UI.Controls
                                 if (k.Kieu == KieuKyHieu.DuongCham) pen.DashStyle = DashStyle.Dot;
                                 g.DrawLine(pen, r.X, cy, r.Right, cy);
                             }
+                            break;
+                        case KieuKyHieu.XeBus:
+                            // giống ký hiệu trạm trên bản đồ khi phóng to (Map.KyHieuTram)
+                            using (var bmp = XeBus_GIS.Map.KyHieuTram.Ve(mau, Color.White, s))
+                                g.DrawImage(bmp, o.X, o.Y, s, s);
                             break;
                         case KieuKyHieu.Vung:
                             var rv = new Rectangle(r.X + 1, r.Y + 2, r.Width - 2, r.Height - 4);

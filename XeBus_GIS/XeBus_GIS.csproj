@@ -106,6 +106,7 @@
     <Compile Include="Map\MapManager.cs" />
     <Compile Include="Map\MapTools.cs" />
     <Compile Include="Map\MayChuNenCucBo.cs" />
+    <Compile Include="Map\KyHieuTram.cs" />
     <Compile Include="UI\Theme.cs" />
     <Compile Include="UI\Icons.cs" />
     <Compile Include="UI\UiHelper.cs" />

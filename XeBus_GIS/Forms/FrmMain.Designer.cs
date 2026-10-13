@@ -14,7 +14,6 @@
 
         private void InitializeComponent()
         {
-            this.components = new System.ComponentModel.Container();
             this.navBar = new XeBus_GIS.UI.Controls.ThanhDieuHuong();
             this.pnlNoiDung = new System.Windows.Forms.Panel();
             this.pnlLamViec = new System.Windows.Forms.Panel();
@@ -57,7 +56,7 @@
             this.txtTimNhanh = new System.Windows.Forms.TextBox();
             this.lblIconTim = new System.Windows.Forms.Label();
             this.btnUser = new System.Windows.Forms.Button();
-            this.mnuUser = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.mnuUser = new System.Windows.Forms.ContextMenuStrip();
             this.mnuThongTinTk = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuSep = new System.Windows.Forms.ToolStripSeparator();
             this.mnuDangXuat = new System.Windows.Forms.ToolStripMenuItem();

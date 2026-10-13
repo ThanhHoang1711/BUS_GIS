@@ -314,11 +314,12 @@ namespace XeBus_GIS.Forms
         private void TaoDanhSachLop()
         {
             const string gt = "Giao thông", dc = "Dân cư & công trình", rg = "Ranh giới hành chính";
-            panelLop.Them(MapManager.Tram, "Trạm xe buýt", gt, new ChuGiai("", Theme.MapTram, KieuKyHieu.Tron),
-                new ChuGiai("Trạm dừng", Theme.MapTram, KieuKyHieu.Tron),
-                new ChuGiai("Bến xe / điểm trung chuyển", Theme.MapBenXe, KieuKyHieu.Vuong),
-                new ChuGiai("Trạm đề xuất", Theme.MapTramDeXuat, KieuKyHieu.Tron),
-                new ChuGiai("Ngừng hoạt động", Theme.MapTramNgung, KieuKyHieu.Tron));
+            panelLop.Them(MapManager.Tram, "Trạm xe buýt", gt, new ChuGiai("", Theme.MapTram, KieuKyHieu.XeBus),
+                new ChuGiai("Trạm dừng", Theme.MapTram, KieuKyHieu.XeBus),
+                new ChuGiai("Bến xe / điểm trung chuyển", Theme.MapBenXe, KieuKyHieu.XeBus),
+                new ChuGiai("Trạm đề xuất", Theme.MapTramDeXuat, KieuKyHieu.XeBus),
+                new ChuGiai("Ngừng hoạt động", Theme.MapTramNgung, KieuKyHieu.XeBus),
+                new ChuGiai("Thu nhỏ hơn 1:120.000: trạm hiện dạng chấm", Theme.MapTram, KieuKyHieu.Tron));
             panelLop.Them(MapManager.Tuyen, "Tuyến xe buýt", gt, new ChuGiai("", Theme.MauTuyen[0], KieuKyHieu.Duong));
             panelLop.Them(MapManager.DoanDuong, "Đoạn đường", gt, new ChuGiai("", Theme.MapDuong, KieuKyHieu.Duong));
             panelLop.Them(MapManager.CongTrinh, "Công trình", dc, new ChuGiai("", Theme.MapCongTrinh, KieuKyHieu.Thoi),
