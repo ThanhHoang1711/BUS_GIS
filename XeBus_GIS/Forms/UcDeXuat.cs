@@ -59,6 +59,78 @@ namespace XeBus_GIS.Forms
             TaoBieuDo();
             GanSuKien();
             DenBuoc(1);
+            TaoTab();
+        }
+
+        // =====================================================================
+        // Hai tab: "Đề xuất theo vùng" (wizard 5 bước – Người quản lý) | "Chọn vị trí đặt trạm" (đa tiêu chí – Quản trị viên)
+        // =====================================================================
+        private UcChonViTri _chonViTri;
+        private Panel _pnlTheoVung, _pnlTab;
+        private Button _tabTheoVung, _tabChonViTri;
+        private bool _oChonViTri;
+        private bool _dangHien;
+
+        private bool CoTheoVung => Session.Co(Quyen.DxChonVung);
+
+        private void TaoTab()
+        {
+            if (!Session.Co(Quyen.DxChonViTri)) return;   // chỉ có wizard như cũ
+            SuspendLayout();
+            // gom toàn bộ nội dung wizard vào một panel (giữ nguyên thứ tự dock)
+            var cu = Controls.Cast<Control>().ToArray();
+            Controls.Clear();
+            _pnlTheoVung = new Panel { Dock = DockStyle.Fill, BackColor = Theme.Surface };
+            _pnlTheoVung.Controls.AddRange(cu);
+            _chonViTri = new UcChonViTri(_bc) { Dock = DockStyle.Fill };
+            Controls.Add(_chonViTri);
+            Controls.Add(_pnlTheoVung);
+            if (CoTheoVung)
+            {
+                _pnlTab = new Panel { Dock = DockStyle.Top, Height = UiHelper.Dp(40), BackColor = Theme.Surface, Padding = new Padding(UiHelper.Dp(6), 0, UiHelper.Dp(6), 0) };
+                _tabTheoVung = new Button { Text = "Theo vùng (5 bước)", Dock = DockStyle.Left };
+                _tabChonViTri = new Button { Text = "Chọn vị trí đặt trạm", Dock = DockStyle.Left };
+                foreach (var b in new[] { _tabTheoVung, _tabChonViTri })
+                {
+                    UiHelper.Tab(b);
+                    b.Width = TextRenderer.MeasureText(b.Text, Theme.FontDam).Width + UiHelper.Dp(24);
+                }
+                _pnlTab.Controls.Add(_tabChonViTri);
+                _pnlTab.Controls.Add(_tabTheoVung);
+                UiHelper.DuongKe(_pnlTab, 0);
+                Controls.Add(_pnlTab);
+                _tabTheoVung.Click += (s, e) => ChonTab(false);
+                _tabChonViTri.Click += (s, e) => ChonTab(true);
+            }
+            ResumeLayout();
+            DatTab(!CoTheoVung);
+        }
+
+        private void DatTab(bool chonViTri)
+        {
+            _oChonViTri = chonViTri;
+            if (_pnlTheoVung == null) return;
+            _pnlTheoVung.Visible = !chonViTri;
+            _chonViTri.Visible = chonViTri;
+            if (_pnlTab != null)
+            {
+                UiHelper.ChonTab(_tabTheoVung, !chonViTri);
+                UiHelper.ChonTab(_tabChonViTri, chonViTri);
+            }
+        }
+
+        private void ChonTab(bool chonViTri)
+        {
+            if (chonViTri == _oChonViTri) return;
+            if (_dangHien)
+            {
+                if (chonViTri) NgungTheoVung(); else _chonViTri.NgungKichHoat();
+            }
+            DatTab(chonViTri);
+            if (_dangHien)
+            {
+                if (chonViTri) _chonViTri.KichHoat(); else KichHoatTheoVung();
+            }
         }
 
         // =====================================================================
@@ -248,7 +320,21 @@ namespace XeBus_GIS.Forms
         // =====================================================================
         // IModule
         // =====================================================================
-        public async void KichHoat()
+        public void KichHoat()
+        {
+            _dangHien = true;
+            if (_oChonViTri) _chonViTri.KichHoat();
+            else KichHoatTheoVung();
+        }
+
+        public void NgungKichHoat()
+        {
+            _dangHien = false;
+            if (_chonViTri != null) _chonViTri.NgungKichHoat();
+            NgungTheoVung();
+        }
+
+        private async void KichHoatTheoVung()
         {
             if (!_daNap)
             {
@@ -284,7 +370,7 @@ namespace XeBus_GIS.Forms
             }
         }
 
-        public void NgungKichHoat()
+        private void NgungTheoVung()
         {
             if (_dangCho != DangCho.KhongCo)
             {
@@ -302,6 +388,7 @@ namespace XeBus_GIS.Forms
         /// </summary>
         public void DatVung(string maPhuong, string wktVe, double banKinh, double nguong)
         {
+            if (_pnlTab != null) ChonTab(false);   // vùng từ màn hình Phân tích dùng cho wizard theo vùng
             Action dat = () =>
             {
                 nudBanKinh.Value = Math.Max(nudBanKinh.Minimum, Math.Min(nudBanKinh.Maximum, (decimal)banKinh));

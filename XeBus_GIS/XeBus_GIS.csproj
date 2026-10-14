@@ -107,6 +107,28 @@
     <Compile Include="Map\MapTools.cs" />
     <Compile Include="Map\MayChuNenCucBo.cs" />
     <Compile Include="Map\KyHieuTram.cs" />
+    <Compile Include="Forms\UcChonViTri.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Forms\UcChonViTri.Designer.cs">
+      <DependentUpon>UcChonViTri.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\Controls\BieuDoRadar.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="UI\Controls\BangTieuChi.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="UI\Controls\ThanhThangMau.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="UI\Controls\NhomChip.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="UI\Controls\ThanhTrongSo.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Data\ChonViTriRepository.cs" />
     <Compile Include="UI\Theme.cs" />
     <Compile Include="UI\Icons.cs" />
     <Compile Include="UI\UiHelper.cs" />

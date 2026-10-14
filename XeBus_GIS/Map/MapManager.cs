@@ -453,6 +453,33 @@ namespace XeBus_GIS.Map
             }
         };
 
+        /// <summary>Phân lớp màu cho lớp tạm đường (polyline): cột "kieu" = "0".."n-1" ứng với mau[i], nét rộng rong px.</summary>
+        public static Action<Shapefile> KieuDuongPhanLop(Color[] mau, float rong = 5) => sf =>
+        {
+            var o = sf.DefaultDrawingOptions;
+            o.LineColor = Theme.Ole(Theme.MapDuong);
+            o.LineWidth = rong;
+            for (int i = 0; i < mau.Length; i++)
+            {
+                var cat = sf.Categories.Add("Lớp " + i);
+                cat.Expression = "[kieu] = \"" + i + "\"";
+                cat.DrawingOptions.LineColor = Theme.Ole(mau[i]);
+                cat.DrawingOptions.LineWidth = rong;
+            }
+        };
+
+        /// <summary>Phân lớp màu cho lớp tạm điểm: cột "kieu" = "0".."n-1" ứng với mau[i].</summary>
+        public static Action<Shapefile> KieuDiemPhanLop(Color[] mau, float coDiem = 11) => sf =>
+        {
+            KieuDiem(sf.DefaultDrawingOptions, Theme.MapDuong, coDiem, tkDefaultPointSymbol.dpsCircle);
+            for (int i = 0; i < mau.Length; i++)
+            {
+                var cat = sf.Categories.Add("Lớp " + i);
+                cat.Expression = "[kieu] = \"" + i + "\"";
+                KieuDiem(cat.DrawingOptions, mau[i], coDiem, tkDefaultPointSymbol.dpsCircle);
+            }
+        };
+
         /// <summary>Chụp ảnh khung nhìn bản đồ hiện tại ra file PNG.</summary>
         public void ChupAnh(string duongDan)
         {

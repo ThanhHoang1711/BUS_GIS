@@ -91,6 +91,28 @@ namespace XeBus_GIS.UI
             Danger, ColorTranslator.FromHtml("#F97316"), ColorTranslator.FromHtml("#FACC15"), Success,
         };
 
+        // ---- Công cụ "Chọn vị trí đặt trạm" (đa tiêu chí) ----
+        /// <summary>Màu 5 tiêu chí: dân cư · công trình · trạm hiện có · giao thông · tiếp cận an toàn.</summary>
+        public static readonly Color[] MauTieuChi =
+        {
+            ColorTranslator.FromHtml("#BE123C"), ColorTranslator.FromHtml("#D97706"), Accent2,
+            ColorTranslator.FromHtml("#4F46E5"), Accent,
+        };
+
+        /// <summary>Thang mức phù hợp 0 → 1 (kém đỏ → tốt xanh lá, 5 lớp).</summary>
+        public static readonly Color[] ThangMauPhuHop =
+        {
+            ColorTranslator.FromHtml("#D7191C"), ColorTranslator.FromHtml("#F48C47"), ColorTranslator.FromHtml("#E9C74A"),
+            ColorTranslator.FromHtml("#8CC65B"), ColorTranslator.FromHtml("#1A9641"),
+        };
+
+        /// <summary>Thang mật độ dân CHƯA có trạm phục vụ (nhạt → đậm, cùng tông màu tiêu chí dân cư).</summary>
+        public static readonly Color[] ThangMauDanCu =
+        {
+            ColorTranslator.FromHtml("#FFE4E6"), ColorTranslator.FromHtml("#FDA4AF"), ColorTranslator.FromHtml("#FB7185"),
+            ColorTranslator.FromHtml("#E11D48"), ColorTranslator.FromHtml("#881337"),
+        };
+
         /// <summary>Màu (nền, chữ) cho nhãn trạng thái trong lưới.</summary>
         public static void MauTrangThai(string trangThai, out Color nen, out Color chu)
         {
