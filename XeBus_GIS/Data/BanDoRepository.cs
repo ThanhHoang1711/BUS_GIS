@@ -27,13 +27,10 @@ namespace XeBus_GIS.Data
                      ST_AsText(ST_Transform(ST_SimplifyPreserveTopology(geom, 0.0001), 3857)) AS wkt
               FROM xebus.phuongxa";
 
-        /// <summary>Công trình dạng điểm; kieu: YT (y tế), GD (giáo dục), TM (thương mại, chợ), CN, KH (khác).</summary>
+        /// <summary>Công trình dạng điểm; kieu = mã loại công trình (TH, DH, BV… – ký hiệu riêng từng loại, Map/KyHieuCongTrinh).</summary>
         public const string SqlCongTrinh =
             @"SELECT c.macongtrinh AS ma, c.tencongtrinh AS ten, l.tenloaicongtrinh AS loai,
-                     CASE WHEN c.maloaicongtrinh IN ('BV','YT') THEN 'YT'
-                          WHEN c.maloaicongtrinh IN ('TH','DH') THEN 'GD'
-                          WHEN c.maloaicongtrinh IN ('TT','BL','TM') THEN 'TM'
-                          WHEN c.maloaicongtrinh = 'CN' THEN 'CN' ELSE 'KH' END AS kieu,
+                     coalesce(c.maloaicongtrinh, 'KH') AS kieu,
                      ST_AsText(ST_Transform(c.geom, 3857)) AS wkt
               FROM xebus.congtrinh c LEFT JOIN xebus.loaicongtrinh l USING (maloaicongtrinh)";
 
@@ -55,19 +52,20 @@ namespace XeBus_GIS.Data
 
         /// <summary>
         /// Tìm đối tượng gần điểm click nhất trong dung sai (x, y, dungSai đều theo mét của EPSG:3857).
-        /// Ưu tiên: trạm -> công trình -> tuyến -> đoạn đường -> khu dân cư -> phường/xã.
-        /// Trả về (loai, ma) hoặc null.
+        /// Ưu tiên: trạm -> công trình -> tuyến. Trả về (loai, ma) hoặc null.
         /// </summary>
+        /// <param name="coTram">lớp trạm đang hiển thị</param>
         /// <param name="coCongTrinh">lớp công trình đang hiển thị (ẩn thì bỏ qua khi tra)</param>
-        /// <param name="coKhuDanCu">lớp khu dân cư đang hiển thị</param>
-        public static DataRow TimTaiDiem(double x, double y, double dungSai, bool coCongTrinh = true, bool coKhuDanCu = true)
+        /// <param name="coTuyen">cho chọn tuyến (chỉ ở màn hình Tuyến xe buýt)</param>
+        public static DataRow TimTaiDiem(double x, double y, double dungSai, bool coTram = true, bool coCongTrinh = true, bool coTuyen = false)
         {
+            // Chỉ chọn đối tượng điểm (trạm luôn được ưu tiên; công trình khi lớp đang bật) – click trượt không còn
+            // rơi vào đường, khu dân cư hay phường/xã. Tuyến chỉ chọn được khi đang ở màn hình Tuyến xe buýt.
             const string sql = @"
-WITH p AS (SELECT ST_Transform(ST_SetSRID(ST_MakePoint(@x, @y), 3857), 4326) AS g,
-                  ST_SetSRID(ST_MakePoint(@x, @y), 3857) AS m)
+WITH p AS (SELECT ST_SetSRID(ST_MakePoint(@x, @y), 3857) AS m)
 SELECT * FROM (
     (SELECT 1 AS uu_tien, 'TRAM' AS loai, t.matram AS ma, ST_Distance(ST_Transform(t.geom, 3857), p.m) AS kc
-       FROM xebus.trambuyt t, p WHERE ST_DWithin(ST_Transform(t.geom, 3857), p.m, @tol)
+       FROM xebus.trambuyt t, p WHERE @tram AND ST_DWithin(ST_Transform(t.geom, 3857), p.m, @tol)
       ORDER BY 4 LIMIT 1)
     UNION ALL
     (SELECT 2, 'CONGTRINH', c.macongtrinh, ST_Distance(ST_Transform(c.geom, 3857), p.m)
@@ -75,18 +73,10 @@ SELECT * FROM (
       ORDER BY 4 LIMIT 1)
     UNION ALL
     (SELECT 3, 'TUYEN', t.matuyen, ST_Distance(ST_Transform(t.geom, 3857), p.m)
-       FROM xebus.tuyenbuyt t, p WHERE t.geom IS NOT NULL AND ST_DWithin(ST_Transform(t.geom, 3857), p.m, @tol)
+       FROM xebus.tuyenbuyt t, p WHERE @tuyen AND t.geom IS NOT NULL AND ST_DWithin(ST_Transform(t.geom, 3857), p.m, @tol * 0.6)
       ORDER BY 4 LIMIT 1)
-    UNION ALL
-    (SELECT 4, 'DOAN', d.madoan, ST_Distance(ST_Transform(d.geom, 3857), p.m)
-       FROM xebus.doanduong d, p WHERE ST_DWithin(ST_Transform(d.geom, 3857), p.m, @tol)
-      ORDER BY 4 LIMIT 1)
-    UNION ALL
-    (SELECT 5, 'KDC', k.makhu, 0 FROM xebus.khudancu k, p WHERE @kdc AND ST_Intersects(k.geom, p.g) LIMIT 1)
-    UNION ALL
-    (SELECT 6, 'PHUONG', x.maphuong, 0 FROM xebus.phuongxa x, p WHERE ST_Intersects(x.geom, p.g) LIMIT 1)
-) a ORDER BY uu_tien LIMIT 1";
-            var dt = Db.Query(sql, "@x", x, "@y", y, "@tol", dungSai, "@ct", coCongTrinh, "@kdc", coKhuDanCu);
+) a ORDER BY uu_tien, kc LIMIT 1";
+            var dt = Db.Query(sql, "@x", x, "@y", y, "@tol", dungSai, "@tram", coTram, "@ct", coCongTrinh, "@tuyen", coTuyen);
             return dt.Rows.Count == 0 ? null : dt.Rows[0];
         }
 

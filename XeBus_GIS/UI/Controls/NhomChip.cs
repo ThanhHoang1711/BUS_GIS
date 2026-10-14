@@ -60,7 +60,7 @@ namespace XeBus_GIS.UI.Controls
             int x = 0, y = 0;
             for (int i = 0; i < _muc.Length; i++)
             {
-                int w = TextRenderer.MeasureText(_muc[i], Theme.FontNhan).Width + UiHelper.Dp(_mau[i].HasValue ? 30 : 20);
+                int w = TextRenderer.MeasureText(_muc[i], Theme.FontDam).Width + UiHelper.Dp(_mau[i].HasValue ? 30 : 20);   // đo theo chữ đậm (chip đang chọn)
                 if (x > 0 && x + w > Width) { x = 0; y += CaoChip + Cach; }
                 ds.Add(new Rectangle(x, y, w, CaoChip));
                 x += w + Cach;

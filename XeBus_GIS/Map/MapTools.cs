@@ -98,7 +98,7 @@ namespace XeBus_GIS.Map
             switch (HienTai)
             {
                 case CongCu.ChonDoiTuong:
-                    if (trai) ClickChonDoiTuong?.Invoke(x, y, _mm.MetTrenPixel() * 8);
+                    if (trai) ClickChonDoiTuong?.Invoke(x, y, _mm.DungSaiChonM());
                     break;
 
                 case CongCu.ChonDiem:

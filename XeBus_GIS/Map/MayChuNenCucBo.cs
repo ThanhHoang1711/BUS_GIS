@@ -24,6 +24,7 @@ namespace XeBus_GIS.Map
 
         private readonly TcpListener _nghe;
         private readonly string[] _nguon;
+        private readonly string[] _nhan;      // lớp nhãn PNG trong suốt phủ lên nền (vd Esri ...Reference) – có thể null
         private readonly float _baoHoa;
         private readonly string _thuMucDem;
         private readonly CancellationTokenSource _huy = new CancellationTokenSource();
@@ -37,9 +38,11 @@ namespace XeBus_GIS.Map
         /// <param name="nguon">các URL nguồn có {z} {x} {y} – thử lần lượt, nguồn sau là dự phòng khi nguồn trước lỗi</param>
         /// <param name="tenDem">tên thư mục đệm (theo nguồn + kiểu)</param>
         /// <param name="baoHoa">độ bão hoà màu giữ lại (1 = màu gốc; nhỏ hơn = nhạt hơn, kèm nâng sáng nhẹ)</param>
-        public MayChuNenCucBo(string[] nguon, string tenDem, float baoHoa)
+        /// <param name="nhan">URL lớp nhãn (PNG trong suốt) ghép lên trên nền – null nếu nền đã có sẵn nhãn</param>
+        public MayChuNenCucBo(string[] nguon, string tenDem, float baoHoa, string[] nhan = null)
         {
             _nguon = nguon;
+            _nhan = nhan;
             _baoHoa = baoHoa;
             _thuMucDem = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "XeBus_GIS", "tiles", tenDem);
             ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
@@ -143,14 +146,25 @@ namespace XeBus_GIS.Map
             {
                 foreach (var mau in _nguon)
                 {
-                    var goc = await TaiAsync(mau.Replace("{z}", z.ToString()).Replace("{x}", x.ToString()).Replace("{y}", y.ToString())).ConfigureAwait(false);
+                    var goc = await TaiAsync(DienUrl(mau, z, x, y)).ConfigureAwait(false);
                     if (goc == null) continue; // nguồn này lỗi – thử nguồn dự phòng
 
                     var kq = _baoHoa < 0.999f ? LamNhat(goc, _baoHoa) : goc;
+                    if (_nhan != null)
+                    {
+                        byte[] nhan = null;
+                        foreach (var mn in _nhan)
+                            if ((nhan = await TaiAsync(DienUrl(mn, z, x, y)).ConfigureAwait(false)) != null) break;
+                        kq = nhan != null ? Ghep(kq, nhan) : ChuyenPng(kq);
+                        if (nhan == null) tep = null;   // thiếu nhãn (lỗi mạng tạm thời) – không lưu đệm để lần sau tải lại
+                    }
                     try
                     {
-                        Directory.CreateDirectory(Path.GetDirectoryName(tep));
-                        File.WriteAllBytes(tep, kq);
+                        if (tep != null)
+                        {
+                            Directory.CreateDirectory(Path.GetDirectoryName(tep));
+                            File.WriteAllBytes(tep, kq);
+                        }
                     }
                     catch { /* không ghi được đệm thì vẫn trả ảnh */ }
                     return kq;
@@ -161,6 +175,51 @@ namespace XeBus_GIS.Map
             {
                 _gioiHan.Release();
             }
+        }
+
+        private static string DienUrl(string mau, int z, int x, int y) =>
+            mau.Replace("{z}", z.ToString()).Replace("{x}", x.ToString()).Replace("{y}", y.ToString());
+
+        /// <summary>Ghép lớp nhãn (PNG trong suốt) lên ảnh nền, trả PNG.</summary>
+        private static byte[] Ghep(byte[] nen, byte[] nhan)
+        {
+            try
+            {
+                using (var v1 = new MemoryStream(nen))
+                using (var v2 = new MemoryStream(nhan))
+                using (var a1 = Image.FromStream(v1))
+                using (var a2 = Image.FromStream(v2))
+                using (var bmp = new Bitmap(a1.Width, a1.Height, PixelFormat.Format32bppArgb))
+                {
+                    using (var g = Graphics.FromImage(bmp))
+                    {
+                        g.DrawImage(a1, 0, 0, a1.Width, a1.Height);
+                        g.DrawImage(a2, 0, 0, a1.Width, a1.Height);
+                    }
+                    using (var ra = new MemoryStream())
+                    {
+                        bmp.Save(ra, ImageFormat.Png);
+                        return ra.ToArray();
+                    }
+                }
+            }
+            catch { return nen; }
+        }
+
+        /// <summary>Đổi ảnh (vd JPEG của Esri) sang PNG – phản hồi luôn khai báo image/png.</summary>
+        private static byte[] ChuyenPng(byte[] anh)
+        {
+            try
+            {
+                using (var v = new MemoryStream(anh))
+                using (var a = Image.FromStream(v))
+                using (var ra = new MemoryStream())
+                {
+                    a.Save(ra, ImageFormat.Png);
+                    return ra.ToArray();
+                }
+            }
+            catch { return anh; }
         }
 
         private static async Task<byte[]> TaiAsync(string url)

@@ -107,6 +107,7 @@
     <Compile Include="Map\MapTools.cs" />
     <Compile Include="Map\MayChuNenCucBo.cs" />
     <Compile Include="Map\KyHieuTram.cs" />
+    <Compile Include="Map\KyHieuCongTrinh.cs" />
     <Compile Include="Forms\UcChonViTri.cs">
       <SubType>UserControl</SubType>
     </Compile>

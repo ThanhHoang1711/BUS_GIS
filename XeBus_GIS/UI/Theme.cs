@@ -57,6 +57,8 @@ namespace XeBus_GIS.UI
         public static readonly Color MapCtGiaoDuc = ColorTranslator.FromHtml("#16A34A");     // trường học, đại học
         public static readonly Color MapCtThuongMai = ColorTranslator.FromHtml("#D97706");   // TTTM, siêu thị, chợ
         public static readonly Color MapCtCongNghiep = ColorTranslator.FromHtml("#78350F");  // khu công nghiệp
+        public static readonly Color MapCtHanhChinh = ColorTranslator.FromHtml("#334155");   // hành chính - công cộng
+        public static readonly Color MapCtCongVien = ColorTranslator.FromHtml("#4D7C0F");    // công viên, thể thao
         public static readonly Color MapPhuongXa = ColorTranslator.FromHtml("#64748B");
         public static readonly Color MapRanhGioi = ColorTranslator.FromHtml("#172033");
         public static readonly Color MapBenXe = ColorTranslator.FromHtml("#172033");
