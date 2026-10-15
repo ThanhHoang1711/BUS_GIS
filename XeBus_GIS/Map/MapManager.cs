@@ -72,9 +72,11 @@ namespace XeBus_GIS.Map
             // ký hiệu trạm hình xe buýt đổi cỡ theo tỷ lệ
             Map.ExtentsChanged += (s, e) =>
             {
+                if (GiuTyLeKhiDoiCo()) return;
                 bool doi = CapNhatKyHieuTram(false) | CapNhatKyHieuCongTrinh(false);
                 if (doi) Map.Redraw();
             };
+            Map.SizeChanged += (s, e) => GiuTyLeKhiDoiCo();
             ToanCanh();
 
             DangKy(RanhGioi, "Ranh giới Hà Nội", ShpfileType.SHP_POLYGON, BanDoRepository.SqlRanhGioi, sf =>
@@ -602,6 +604,80 @@ namespace XeBus_GIS.Map
             {
                 Map.LockWindow(tkLockMode.lmUnlock);
             }
+            Map.Redraw();
+        }
+
+        // ---- Giữ tâm + tỷ lệ khi khung bản đồ đổi kích thước ----
+        // MapWinGIS mặc định "nhét vừa" phạm vi cũ vào khung mới rồi làm tròn ra bậc zoom tile thô hơn – và làm việc đó
+        // NGAY khi nhận WM_SIZE (trước cả SizeChanged của WinForms) ⇒ mỗi lần thu/mở menu trái, panel phải, khung dưới,
+        // bản đồ lùi một bậc (1:36.000 → 1:577.000 → …). Cách giữ: chụp tâm + số mét/pixel TRƯỚC khi khung đổi cỡ
+        // (FrmMain gọi TruocKhiDoiCo từ sự kiện Layout của panel chứa bản đồ – chạy trước khi control con đổi cỡ), bỏ qua
+        // mọi thay đổi phạm vi trong lúc đổi cỡ, rồi đặt lại phạm vi sau khi xong (BeginInvoke).
+        private double _mppLuu, _tamXLuu, _tamYLuu;
+        private Size _coLuu;
+        private bool _dangGiuTyLe, _choKhoiPhuc;
+
+        /// <summary>Panel chứa bản đồ sắp đổi cỡ (sang kích thước coMoi): lưu tâm + tỷ lệ hiện tại, hẹn khôi phục.</summary>
+        public void TruocKhiDoiCo(Size coMoi)
+        {
+            if (coMoi == Map.Size || coMoi.Width < 40 || coMoi.Height < 40) return;
+            if (!_choKhoiPhuc && !_dangGiuTyLe) GhiNhanTyLe();
+            HenKhoiPhuc();
+        }
+
+        /// <summary>Hẹn đặt lại tâm + tỷ lệ đã lưu sau khi bố cục xong (vd quay lại từ trang toàn màn hình).</summary>
+        public void HenKhoiPhuc()
+        {
+            if (_mppLuu <= 0 || _choKhoiPhuc) return;
+            _choKhoiPhuc = true;
+            Map.BeginInvoke((Action)KhoiPhucTyLe);
+        }
+
+        /// <summary>Gọi khi phạm vi hoặc kích thước đổi; trả true nếu thuộc lượt đổi cỡ (không phải người dùng zoom/pan).</summary>
+        private bool GiuTyLeKhiDoiCo()
+        {
+            if (_dangGiuTyLe || _choKhoiPhuc) return true;
+            var co = Map.Size;
+            if (co.Width < 40 || co.Height < 40) return true;           // khung đang ẩn (trang toàn màn hình) – bỏ qua
+            if (_mppLuu > 0 && co != _coLuu) { HenKhoiPhuc(); return true; }   // đổi cỡ không qua TruocKhiDoiCo (dự phòng)
+            GhiNhanTyLe();
+            return false;
+        }
+
+        private void GhiNhanTyLe()
+        {
+            var co = Map.Size;
+            if (!(Map.Extents is Extents ext) || co.Width < 40 || co.Height < 40) return;
+            // tỷ lệ thật đọc qua phép đổi pixel → toạ độ của MapWinGIS (bề rộng vẽ nội bộ có thể lệch vài px so với control)
+            double mpp = MetTrenPixel();
+            if (!(mpp > 0)) return;
+            _mppLuu = mpp;
+            _tamXLuu = (ext.xMin + ext.xMax) / 2;
+            _tamYLuu = (ext.yMin + ext.yMax) / 2;
+            _coLuu = co;
+        }
+
+        private void KhoiPhucTyLe()
+        {
+            _choKhoiPhuc = false;
+            var co = Map.Size;
+            if (co.Width < 40 || co.Height < 40 || _mppLuu <= 0) return;
+            _dangGiuTyLe = true;
+            try
+            {
+                // Có nền tile: MapWinGIS làm tròn ra bậc zoom chứa trọn phạm vi ⇒ yêu cầu nhỏ hơn khung 10% để luôn rơi đúng
+                // bậc cũ (bậc mịn hơn chỉ chứa 50% nên không thể bị chọn). Không nền: đặt đúng kích thước.
+                double k = Map.TileProvider == tkTileProvider.ProviderNone ? 1.0 : 0.9;
+                double nx = co.Width / 2.0 * _mppLuu * k, ny = co.Height / 2.0 * _mppLuu * k;
+                var e = new Extents();
+                e.SetBounds(_tamXLuu - nx, _tamYLuu - ny, 0, _tamXLuu + nx, _tamYLuu + ny, 0);
+                Map.Extents = e;
+            }
+            finally { _dangGiuTyLe = false; }
+            // giữ nguyên tâm + tỷ lệ đã lưu (không ghi đè theo kết quả làm tròn) – nhiều lần đổi cỡ liên tiếp không trôi
+            _coLuu = co;
+            CapNhatKyHieuTram(false);
+            CapNhatKyHieuCongTrinh(false);
             Map.Redraw();
         }
 

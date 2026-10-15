@@ -97,6 +97,8 @@ namespace XeBus_GIS.Forms
             _axMap.Name = "axMap";
             pnlMap.Controls.Add(_axMap);
             ((ISupportInitialize)_axMap).EndInit();
+            // Layout của panel chạy TRƯỚC khi bản đồ con đổi cỡ ⇒ chụp tâm + tỷ lệ để giữ nguyên sau khi đổi cỡ
+            pnlMap.Layout += (s, e) => _mm?.TruocKhiDoiCo(pnlMap.DisplayRectangle.Size);
             TaoKhungDuoi();
         }
 
@@ -918,19 +920,12 @@ namespace XeBus_GIS.Forms
             }
         }
 
-        private MapWinGIS.Extents _phamViLuu;
-
         /// <summary>Màn hình toàn trang (không bản đồ) hoặc màn hình bản đồ.</summary>
         private void DatCheDoToanTrang(bool toanTrang)
         {
             bool dangCoBanDo = pnlMap.Visible;
-            // ẩn bản đồ làm control co về 0 – lưu phạm vi để khôi phục đúng khung nhìn khi quay lại
-            if (toanTrang && dangCoBanDo && _mm != null) _phamViLuu = _axMap.Extents as MapWinGIS.Extents;
-            if (!toanTrang && !dangCoBanDo && _phamViLuu != null)
-            {
-                var pv = _phamViLuu;
-                BeginInvoke((Action)(() => { try { _axMap.Extents = pv; } catch { } }));
-            }
+            // ẩn bản đồ có thể làm control co về 0 – MapManager giữ tâm + tỷ lệ, quay lại thì khôi phục đúng khung nhìn
+            if (!toanTrang && !dangCoBanDo) _mm?.HenKhoiPhuc();
             pnlTrang.Visible = toanTrang;
             pnlToolbar.Visible = !toanTrang;
             pnlMap.Visible = !toanTrang;
