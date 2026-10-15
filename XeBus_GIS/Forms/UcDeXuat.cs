@@ -391,7 +391,7 @@ namespace XeBus_GIS.Forms
             if (_dangCho != DangCho.KhongCo)
             {
                 _dangCho = DangCho.KhongCo;
-                _bc.CongCu.Dat(CongCu.ChonDoiTuong);
+                _bc.CongCu.Dat(MapTools.MacDinh);
             }
             foreach (var l in new[] { LopVung, LopThieu, LopUngVien, LopVong }) _bc.BanDo.XoaLopTam(l);
         }

@@ -428,7 +428,7 @@ namespace XeBus_GIS.Forms
             if (_dangCho != DangCho.KhongCo)
             {
                 _dangCho = DangCho.KhongCo;
-                _bc.CongCu.Dat(CongCu.ChonDoiTuong);
+                _bc.CongCu.Dat(MapTools.MacDinh);
             }
             _bc.AnBangDuoi?.Invoke(_khungDuoi);
             foreach (var l in TatCaLop) _bc.BanDo.XoaLopTam(l);
@@ -856,7 +856,7 @@ namespace XeBus_GIS.Forms
         {
             if (_dangCho != DangCho.ChonDiem) return;
             _dangCho = DangCho.KhongCo;
-            _bc.CongCu.Dat(CongCu.ChonDoiTuong);
+            _bc.CongCu.Dat(MapTools.MacDinh);
             _bc.BanDo.ProjSangDo(x, y, out double lon, out double lat);
             var p = new ViTri { Lon = lon, Lat = lat };
             var gan = _ds.OrderBy(v => KhoangCachM(v, p)).FirstOrDefault();
