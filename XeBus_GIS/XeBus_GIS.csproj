@@ -117,6 +117,9 @@
     <Compile Include="UI\Controls\BieuDoRadar.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="UI\Controls\TheDoiTuong.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="UI\Controls\BangTieuChi.cs">
       <SubType>Component</SubType>
     </Compile>
@@ -131,6 +134,8 @@
     </Compile>
     <Compile Include="Data\ChonViTriRepository.cs" />
     <Compile Include="UI\Theme.cs" />
+    <Compile Include="UI\ThemeManager.cs" />
+    <Compile Include="UI\CaiDatNguoiDung.cs" />
     <Compile Include="UI\Icons.cs" />
     <Compile Include="UI\UiHelper.cs" />
     <Compile Include="UI\Controls\Toast.cs">

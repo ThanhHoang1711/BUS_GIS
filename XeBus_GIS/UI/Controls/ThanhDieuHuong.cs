@@ -190,7 +190,7 @@ namespace XeBus_GIS.UI.Controls
             else
             {
                 using (var path = UiHelper.DuongBoGoc(rLogo, UiHelper.Dp(8)))
-                using (var br = new SolidBrush(Theme.Accent))
+                using (var br = new SolidBrush(Theme.MapTram))   // logo: màu thương hiệu cố định ở cả hai chế độ
                     g.FillPath(br, path);
                 using (var f = Theme.FontIcon(14f))
                     TextRenderer.DrawText(g, Icons.Bus, f, rLogo, Color.White, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix);

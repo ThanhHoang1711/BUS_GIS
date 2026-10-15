@@ -282,6 +282,9 @@ namespace XeBus_GIS.Forms
         // =====================================================================
         // 2.1 Xem thông tin tuyến
         // =====================================================================
+        /// <summary>Xem một tuyến từ nơi khác (chip tuyến trên thẻ thông tin trạm).</summary>
+        public Task XemTuyenTuNgoaiAsync(string maTuyen) => XemTuyenAsync(maTuyen, zoom: true, chonTrongLuoi: true);
+
         private async Task XemTuyenAsync(string maTuyen, bool zoom = true, bool chonTrongLuoi = false)
         {
             DataRow tuyen = null;

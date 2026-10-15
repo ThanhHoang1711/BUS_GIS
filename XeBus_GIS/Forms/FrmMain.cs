@@ -73,6 +73,12 @@ namespace XeBus_GIS.Forms
             InitializeComponent();
             TaoBanDo();
             ApDungGiaoDien();
+            TaoNutTheme();
+            TaoTheDoiTuong();
+            TaoDaiPhai();
+            ThemeManager.TieuDeToi(this);
+            ThemeManager.DaDoi += KhiDoiTheme;
+            FormClosed += (s, e) => ThemeManager.DaDoi -= KhiDoiTheme;
             TaoMenu();
             TaoDanhSachLop();
             GanSuKien();
@@ -240,7 +246,7 @@ namespace XeBus_GIS.Forms
             dgvThongTin.AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.AllCells;
             dgvThongTin.AlternatingRowsDefaultCellStyle.BackColor = Theme.Surface;
             dgvThongTin.DefaultCellStyle.SelectionBackColor = Theme.SurfaceHover;
-            UiHelper.TrangThaiRong(dgvThongTin, "Chọn công cụ Chọn đối tượng rồi click vào trạm, tuyến, đường, phường/xã… trên bản đồ để xem thuộc tính.");
+            UiHelper.TrangThaiRong(dgvThongTin, "Click lên trạm (hoặc công trình khi lớp Công trình đang bật) trên bản đồ để xem thuộc tính.");
             DatTabPhai(true);
 
             // Thanh trạng thái
@@ -252,7 +258,7 @@ namespace XeBus_GIS.Forms
             slToaDo.ForeColor = Theme.Muted;
             slTyLe.ForeColor = Theme.Muted;
             slHeToaDo.ForeColor = Theme.Muted;
-            slHeToaDo.ToolTipText = "CSDL lưu EPSG:4326 (WGS 84); bản đồ hiển thị Web Mercator (EPSG:3857); toạ độ con trỏ là kinh/vĩ độ WGS 84";
+            DatChuHeToaDo();
             slDb.ForeColor = Theme.Muted;
         }
 
@@ -361,8 +367,7 @@ namespace XeBus_GIS.Forms
                 _tools.HuyVe();
                 _mm.BoChonTatCa();
                 _mm.XoaTatCaLopTam();
-                dgvThongTin.DataSource = null;
-                lblThongTin.Text = "Thông tin đối tượng";
+                XoaThongTin();
             };
             btnLamMoi.Click += async (s, e) => await UiHelper.ChayAsync(btnLamMoi, NapBanDoAsync);
             btnPanelPhai.Click += (s, e) => DatPanelPhai(!_anPanelPhai);
@@ -415,18 +420,81 @@ namespace XeBus_GIS.Forms
         }
 
         // =====================================================================
-        // Chọn bản đồ nền (đầu tab "Lớp & chú giải"; lựa chọn lưu ở %LOCALAPPDATA%\XeBus_GIS\nen.txt)
+        // Chọn bản đồ nền (đầu tab "Lớp & chú giải"; lựa chọn lưu ở CaiDatNguoiDung)
         // =====================================================================
         private NhomChip _chipNen;
 
-        private static string TepNen => System.IO.Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "XeBus_GIS", "nen.txt");
+        /// <summary>Nền người dùng đã chọn lần trước; chưa chọn thì theo App.config (NenBanDo), rồi mặc định Esri.</summary>
+        private static string NenDaLuu() =>
+            CaiDatNguoiDung.Doc(CaiDatNguoiDung.KhoaNen) ?? System.Configuration.ConfigurationManager.AppSettings["NenBanDo"];
 
-        /// <summary>Nền người dùng đã chọn lần trước; chưa chọn thì theo App.config (NenBanDo), rồi mặc định Esri xám.</summary>
-        private static string NenDaLuu()
+        /// <summary>Thanh trạng thái: hệ toạ độ hiển thị/dữ liệu + bản quyền nền rút gọn (đầy đủ ở tooltip).</summary>
+        private void DatChuHeToaDo()
         {
-            try { if (System.IO.File.Exists(TepNen)) return System.IO.File.ReadAllText(TepNen).Trim(); } catch { }
-            return System.Configuration.ConfigurationManager.AppSettings["NenBanDo"];
+            string bq = _mm?.BanQuyenNen ?? "";
+            string ngan = bq.Contains("Esri") ? "© Esri, OSM" : bq.Contains("OpenStreetMap") ? "© OSM" : "";
+            slHeToaDo.Text = "EPSG:3857 · WGS 84" + (ngan.Length > 0 ? " · " + ngan : "");
+            slHeToaDo.ToolTipText = "Bản đồ hiển thị Web Mercator (EPSG:3857); CSDL lưu WGS 84 (EPSG:4326); toạ độ con trỏ là kinh/vĩ độ WGS 84" +
+                                    (bq.Length > 0 ? "\n" + bq : "");
+        }
+
+        // =====================================================================
+        // Chế độ sáng / tối
+        // =====================================================================
+        private Button _btnTheme;
+
+        private void TaoNutTheme()
+        {
+            _btnTheme = new Button { Size = new Size(UiHelper.Dp(36), UiHelper.Dp(34)), Anchor = AnchorStyles.Top | AnchorStyles.Right, TabStop = true };
+            pnlHeaderPhai.Controls.Add(_btnTheme);
+            DatIconTheme();
+            _btnTheme.Click += (s, e) => ThemeManager.DoiCheDo(!Theme.Toi);
+            mnuUser.Renderer = new ToolStripProfessionalRenderer(new MauStatusStrip());
+            BoCucHeader();
+            pnlHeaderPhai.Resize += (s, e) => BoCucHeader();
+        }
+
+        private void DatIconTheme()
+        {
+            // Segoe Fluent: E706 mặt trời (đang tối → bấm để sáng), E708 trăng (đang sáng → bấm để tối)
+            UiHelper.NutIcon(_btnTheme, Theme.Toi ? "\uE706" : "\uE708",
+                Theme.Toi ? "Chuyển sang chế độ sáng (Ctrl+Shift+L)" : "Chuyển sang chế độ tối (Ctrl+Shift+L)", 12f);
+        }
+
+        /// <summary>Sắp các thành phần bên phải header từ phải sang trái: tài khoản · sáng/tối · (vị trí · thời tiết) · tìm nhanh.</summary>
+        private void BoCucHeader()
+        {
+            int w = pnlHeaderPhai.Width, cach = UiHelper.Dp(8), y = (pnlPageHeader.Height - UiHelper.Dp(34)) / 2;
+            int x = w - btnUser.Width - cach;
+            btnUser.Location = new Point(x, y);
+            x -= _btnTheme.Width + UiHelper.Dp(4);
+            _btnTheme.Location = new Point(x, y);
+            foreach (var c in _phanTuHeader)
+            {
+                if (!c.Visible) continue;
+                x -= c.Width + UiHelper.Dp(4);
+                c.Location = new Point(x, y);
+            }
+            int rongTim = Math.Max(UiHelper.Dp(180), Math.Min(UiHelper.Dp(320), x - cach * 2));
+            pnlTim.SetBounds(x - cach - rongTim, y, rongTim, UiHelper.Dp(34));
+        }
+
+        /// <summary>Thành phần thêm vào header (chip thời tiết, vị trí…) – thứ tự từ phải sang trái.</summary>
+        private readonly List<Control> _phanTuHeader = new List<Control>();
+
+        /// <summary>Áp lại những gì ThemeManager không tự xử lý được: bản đồ, menu tài khoản, nút tài khoản, icon nút theme.</summary>
+        private void KhiDoiTheme()
+        {
+            DatIconTheme();
+            btnUser.FlatAppearance.MouseOverBackColor = Theme.SurfaceHover;
+            btnUser.FlatAppearance.MouseDownBackColor = Theme.Border;
+            mnuUser.BackColor = Theme.Surface;
+            mnuUser.ForeColor = Theme.Text;
+            foreach (ToolStripItem it in mnuUser.Items) { it.BackColor = Theme.Surface; it.ForeColor = Theme.Text; }
+            mnuUser.Renderer = new ToolStripProfessionalRenderer(new MauStatusStrip());
+            statusStrip.Renderer = new ToolStripProfessionalRenderer(new MauStatusStrip());
+            _mm?.ApDungTheme();
+            TrangThai(Theme.Toi ? "Đã chuyển sang chế độ tối." : "Đã chuyển sang chế độ sáng.", false);
         }
 
         private void TaoChonNen()
@@ -449,13 +517,8 @@ namespace XeBus_GIS.Forms
                 if (_mm == null) return;
                 var khoa = MapManager.CacNen[i].khoa;
                 _mm.DatNenBanDo(khoa);
-                slHeToaDo.Text = "WGS 84 · EPSG:4326" + (_mm.BanQuyenNen.Length > 0 ? " · " + _mm.BanQuyenNen : "");
-                try
-                {
-                    System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(TepNen));
-                    System.IO.File.WriteAllText(TepNen, khoa);
-                }
-                catch { /* chỉ là ghi nhớ lựa chọn */ }
+                DatChuHeToaDo();
+                CaiDatNguoiDung.Ghi(CaiDatNguoiDung.KhoaNen, khoa);
             };
         }
 
@@ -468,7 +531,7 @@ namespace XeBus_GIS.Forms
             // bản đồ phải đang hiển thị khi khởi tạo ActiveX
             _mm = new MapManager(_axMap);
             _mm.KhoiTao(NenDaLuu());
-            if (_mm.BanQuyenNen.Length > 0) slHeToaDo.Text = "WGS 84 · EPSG:4326 · " + _mm.BanQuyenNen;
+            DatChuHeToaDo();
             int iNen = Array.FindIndex(MapManager.CacNen, n => n.khoa.Equals(_mm.NenHienTai, StringComparison.OrdinalIgnoreCase));
             if (iNen >= 0 && _chipNen != null) _chipNen.Chon = iNen;
             _mm.HienThiThayDoi += (khoa, hien) => panelLop.DatHien(khoa, hien);
@@ -612,6 +675,7 @@ namespace XeBus_GIS.Forms
             pnlToolbar.Visible = !toanTrang;
             pnlMap.Visible = !toanTrang;
             pnlPhai.Visible = splPhai.Visible = !toanTrang && !_anPanelPhai;
+            if (_daiPhai != null) _daiPhai.Visible = !toanTrang && _anPanelPhai;
             if (toanTrang) { pnlTrai.Visible = splTrai.Visible = false; AnGoiY(); }
             btnPanelPhai.Visible = !toanTrang;
         }
@@ -620,7 +684,17 @@ namespace XeBus_GIS.Forms
         {
             _anPanelPhai = an;
             bool coBanDo = _moduleHienTai == null || !Trang[_moduleHienTai].ToanTrang;
-            pnlPhai.Visible = splPhai.Visible = !an && coBanDo;
+            bool khoa = _axMap != null && _axMap.IsHandleCreated;
+            if (khoa) _axMap.LockWindow(MapWinGIS.tkLockMode.lmLock);   // tránh bản đồ vẽ lại 2 lần khi panel đổi kích thước
+            try
+            {
+                pnlPhai.Visible = splPhai.Visible = !an && coBanDo;
+                if (_daiPhai != null) _daiPhai.Visible = an && coBanDo;
+            }
+            finally
+            {
+                if (khoa) _axMap.LockWindow(MapWinGIS.tkLockMode.lmUnlock);
+            }
             UiHelper.DatTrangThaiBat(btnPanelPhai, !an);
         }
 
@@ -652,6 +726,9 @@ namespace XeBus_GIS.Forms
                 case Keys.Control | Keys.B:
                     navBar.ThuGon = !navBar.ThuGon;
                     return true;
+                case Keys.Control | Keys.Shift | Keys.L:
+                    ThemeManager.DoiCheDo(!Theme.Toi);
+                    return true;
                 case Keys.F5:
                     if (_mm != null && pnlMap.Visible && btnLamMoi.Enabled) btnLamMoi.PerformClick();
                     return true;
@@ -663,6 +740,7 @@ namespace XeBus_GIS.Forms
                         TrangThai("Đã huỷ thao tác trên bản đồ.", false);
                         return true;
                     }
+                    if (pnlMap.Visible && !_anPanelPhai && !(ActiveControl is TextBoxBase)) { DatPanelPhai(true); return true; }
                     break;
             }
             return base.ProcessCmdKey(ref msg, keyData);
@@ -823,7 +901,7 @@ namespace XeBus_GIS.Forms
             UiHelper.DatTrangThaiBat(btnDoDienTich, cc == CongCu.DoDienTich);
             switch (cc)
             {
-                case CongCu.ChonDoiTuong: lblGoiY.Text = "Click vào trạm, tuyến, đường, phường/xã… để xem thông tin. Lăn chuột để phóng to/thu nhỏ."; break;
+                case CongCu.ChonDoiTuong: lblGoiY.Text = "Click lên trạm (hoặc công trình khi lớp đang bật) để xem thông tin. Lăn chuột để phóng to/thu nhỏ."; break;
                 case CongCu.Keo: lblGoiY.Text = "Giữ chuột trái và kéo để di chuyển bản đồ."; break;
                 case CongCu.PhongTo: lblGoiY.Text = "Click hoặc kéo khung để phóng to."; break;
                 case CongCu.ThuNho: lblGoiY.Text = "Click để thu nhỏ."; break;
@@ -844,8 +922,7 @@ namespace XeBus_GIS.Forms
                 _mm.BoChonTatCa();
                 if (r == null)
                 {
-                    dgvThongTin.DataSource = null;
-                    lblThongTin.Text = "Thông tin đối tượng";
+                    XoaThongTin();
                     TrangThai(coCt ? "Không có trạm hoặc công trình tại vị trí click." : "Không có trạm tại vị trí click – click lên biểu tượng trạm để xem thông tin.", false);
                     return;
                 }
@@ -883,12 +960,123 @@ namespace XeBus_GIS.Forms
                 dgvThongTin.Columns[1].FillWeight = 58;
                 dgvThongTin.Columns[1].DefaultCellStyle.Font = Theme.FontDam;
                 lblThongTin.Text = "Thông tin " + TenLoai(loai);
+                _the.Hien(loai, ma, TenLoai(loai), dt);
             }
             catch (Exception ex)
             {
                 lblThongTin.Text = "Thông tin đối tượng";
                 TrangThai("Lỗi đọc thông tin: " + ex.GetBaseException().Message, true);
             }
+        }
+
+        // =====================================================================
+        // Panel phải: thẻ thông tin đối tượng + dải icon khi thu gọn
+        // =====================================================================
+        private TheDoiTuong _the;
+        private Button _btnDangBang;
+        private Panel _daiPhai;
+
+        private void XoaThongTin()
+        {
+            dgvThongTin.DataSource = null;
+            lblThongTin.Text = "Thông tin đối tượng";
+            _the?.Hien(null, null, null, null);
+        }
+
+        private void TaoTheDoiTuong()
+        {
+            _the = new TheDoiTuong { Dock = DockStyle.Fill };
+            pnlTabThongTin.Controls.Add(_the);
+            _the.BringToFront();
+            dgvThongTin.Visible = false;
+            // nút chuyển dạng thẻ ↔ bảng thuộc tính đầy đủ (giữ lưới cũ – không mất thông tin)
+            _btnDangBang = new Button { Size = new Size(UiHelper.Dp(30), UiHelper.Dp(28)), Anchor = AnchorStyles.Top | AnchorStyles.Right };
+            pnlTabThongTin.Controls.Add(_btnDangBang);
+            _btnDangBang.Location = new Point(pnlTabThongTin.ClientSize.Width - pnlTabThongTin.Padding.Right - _btnDangBang.Width, pnlTabThongTin.Padding.Top);
+            _btnDangBang.BringToFront();
+            UiHelper.NutIcon(_btnDangBang, "\uE80A", "Xem dạng bảng thuộc tính đầy đủ", 10f);
+            _btnDangBang.Click += (s, e) =>
+            {
+                bool bang = !dgvThongTin.Visible;
+                dgvThongTin.Visible = bang;
+                _the.Visible = !bang;
+                if (bang) dgvThongTin.BringToFront(); else _the.BringToFront();
+                _btnDangBang.BringToFront();
+                UiHelper.DatTrangThaiBat(_btnDangBang, bang);
+                UiHelper.TipCho(_btnDangBang, bang ? "Xem dạng thẻ" : "Xem dạng bảng thuộc tính đầy đủ");
+            };
+
+            _the.ChoPhepSua = loai => loai == "TRAM" && Session.Co(Quyen.TramCapNhat);
+            _the.MauTuyen = ma => _mm?.MauTuyen(ma);
+            _the.KyHieu = (loai, r) =>
+            {
+                int px = UiHelper.Dp(36);
+                string Gt(string cot) => r.Table.Columns.Contains(cot) && r[cot] != DBNull.Value ? Convert.ToString(r[cot]) : "";
+                switch (loai)
+                {
+                    case "TRAM":
+                        var tt = Gt("Trạng thái");
+                        var mau = tt == "Đề xuất" ? Theme.MapTramDeXuat : tt == "Ngừng hoạt động" ? Theme.MapTramNgung
+                                : Gt("Loại trạm").StartsWith("Bến") ? Theme.MapBenXe : Theme.MapTram;
+                        return KyHieuTram.Ve(mau, Color.White, px);
+                    case "CONGTRINH":
+                        var lct = KyHieuCongTrinh.CacLoai.FirstOrDefault(l => l.Ten == Gt("Loại"));
+                        return lct == null ? null : KyHieuTram.Ve(lct.Mau, Color.White, px, lct.Glyph, tron: true);
+                    case "TUYEN":
+                        return KyHieuTram.Ve(_mm?.MauTuyen(Gt("Mã tuyến")) ?? Theme.MauTuyen[0], Color.White, px, Icons.Tuyen, tron: true);
+                    default:
+                        return null;
+                }
+            };
+            _the.PhongToi += (loai, ma) =>
+            {
+                if (_mm == null || !LopTheoLoai.TryGetValue(loai, out var lop)) return;
+                if (!_mm.LopDangHien(lop)) _mm.HienLop(lop, true);
+                _mm.Chon(lop, new[] { ma }, zoom: true);
+            };
+            _the.Sua += async (loai, ma) =>
+            {
+                if (loai != "TRAM" || !Session.Co(Quyen.TramCapNhat)) return;
+                if (ChonModule("TRAM") is UcTram uc) await uc.SuaTramAsync(ma);
+            };
+            _the.MoTuyen += async ma =>
+            {
+                if (!Session.Co(Quyen.TuyenXem)) return;
+                if (ChonModule("TUYEN") is UcTuyen uc) await uc.XemTuyenTuNgoaiAsync(ma);
+            };
+        }
+
+        /// <summary>
+        /// Dải icon dọc bên phải bản đồ khi panel phải thu gọn (mặc định): Thông tin · Lớp & chú giải · Bản đồ nền.
+        /// Panel tự mở khi chọn đối tượng; ✕ hoặc Esc để thu lại.
+        /// </summary>
+        private void TaoDaiPhai()
+        {
+            _daiPhai = new Panel { Dock = DockStyle.Right, Width = UiHelper.Dp(44), BackColor = Theme.Surface, Padding = new Padding(UiHelper.Dp(4), UiHelper.Dp(8), UiHelper.Dp(4), 0) };
+            _daiPhai.Paint += (s, e) => { using (var pen = new Pen(Theme.Border)) e.Graphics.DrawLine(pen, 0, 0, 0, _daiPhai.Height); };
+            Button Nut(string glyph, string moTa, Action bam)
+            {
+                var b = new Button { Dock = DockStyle.Top, Height = UiHelper.Dp(40), Margin = new Padding(0) };
+                _daiPhai.Controls.Add(b);
+                b.BringToFront();
+                UiHelper.NutIcon(b, glyph, moTa, 12f);
+                b.Click += (s, e) => bam();
+                return b;
+            }
+            Nut(Icons.Thong_Tin, "Thông tin đối tượng", () => { DatTabPhai(true); DatPanelPhai(false); });
+            Nut(Icons.LopBanDo, "Lớp & chú giải", () => { DatTabPhai(false); DatPanelPhai(false); });
+            Nut(Icons.BanDo, "Bản đồ nền", () => { DatTabPhai(false); DatPanelPhai(false); });
+            pnlLamViec.Controls.Add(_daiPhai);
+            // thứ tự dock: … bản đồ · splitter · panel phải · dải icon · khung dưới …
+            var thuTu = new Control[] { pnlTrang, pnlMap, splPhai, pnlPhai, _daiPhai, _splDuoi, _pnlDuoi, splTrai, pnlTrai };
+            for (int i = 0; i < thuTu.Length; i++) pnlLamViec.Controls.SetChildIndex(thuTu[i], i);
+
+            // nhớ độ rộng panel phải
+            if (int.TryParse(CaiDatNguoiDung.Doc(CaiDatNguoiDung.KhoaRongPanelPhai), out int rong) && rong >= UiHelper.Dp(240) && rong <= UiHelper.Dp(560))
+                pnlPhai.Width = rong;
+            splPhai.SplitterMoved += (s, e) => CaiDatNguoiDung.Ghi(CaiDatNguoiDung.KhoaRongPanelPhai, pnlPhai.Width.ToString());
+            UiHelper.TipCho(btnThuPhai, "Thu gọn panel (Esc)");
+            DatPanelPhai(true);
         }
 
         private static string TenLoai(string loai)
@@ -930,6 +1118,12 @@ namespace XeBus_GIS.Forms
             public override Color ToolStripBorder => Theme.Border;
             public override Color MenuItemSelected => Theme.AccentSoft;
             public override Color MenuItemBorder => Theme.AccentSoft;
+            public override Color ToolStripDropDownBackground => Theme.Surface;
+            public override Color ImageMarginGradientBegin => Theme.Surface;
+            public override Color ImageMarginGradientMiddle => Theme.Surface;
+            public override Color ImageMarginGradientEnd => Theme.Surface;
+            public override Color SeparatorDark => Theme.Border;
+            public override Color SeparatorLight => Theme.Surface;
         }
     }
 }

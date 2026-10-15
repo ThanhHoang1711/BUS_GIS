@@ -67,6 +67,10 @@ namespace XeBus_GIS.Forms
             tab.Appearance = TabAppearance.FlatButtons;
             tab.ItemSize = new System.Drawing.Size(0, 1);
             tab.SizeMode = TabSizeMode.Fixed;
+            // khung viền của TabControl do Windows vẽ (luôn sáng màu) – chỉ cho hiện vùng trang bên trong
+            void CatKhung() { var dr = tab.DisplayRectangle; tab.Region = new System.Drawing.Region(dr); }
+            tab.Resize += (s, e) => CatKhung();
+            tab.HandleCreated += (s, e) => CatKhung();
             var pnl = new FlowLayoutPanel
             {
                 Dock = DockStyle.Top,

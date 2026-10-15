@@ -63,7 +63,8 @@ namespace XeBus_GIS.UI
             b.Font = Theme.FontDam;
             b.FlatAppearance.MouseOverBackColor = Theme.AccentHover;
             b.FlatAppearance.MouseDownBackColor = Theme.AccentPressed;
-            GanTrangThai(b, KieuNut.Chinh, Theme.Accent, Color.White, Theme.Accent, 0);
+            GanTrangThai(b, KieuNut.Chinh, Theme.Accent, Theme.ChuTrenAccent, Theme.Accent, 0);
+            ThemeManager.DangKy(b, "nut", () => NutChinh(b));
         }
 
         /// <summary>Nút chính với bộ màu riêng (vd trang đăng nhập dùng tông than chì thay Accent).</summary>
@@ -74,6 +75,7 @@ namespace XeBus_GIS.UI
             b.FlatAppearance.MouseOverBackColor = nenHover;
             b.FlatAppearance.MouseDownBackColor = nenNhan;
             GanTrangThai(b, KieuNut.Chinh, nen, Color.White, nen, 0);
+            ThemeManager.DangKy(b, "nut", () => NutChinh(b, nen, nenHover, nenNhan));
         }
 
         /// <summary>
@@ -133,6 +135,7 @@ namespace XeBus_GIS.UI
             b.FlatAppearance.MouseOverBackColor = Theme.SurfaceHover;
             b.FlatAppearance.MouseDownBackColor = Theme.Border;
             GanTrangThai(b, KieuNut.Phu, Theme.Surface, Theme.Secondary, Theme.BorderStrong, 1);
+            ThemeManager.DangKy(b, "nut", () => NutPhu(b));
         }
 
         /// <summary>Nút nguy hiểm dạng phụ (xoá) – chữ đỏ, viền.</summary>
@@ -140,9 +143,10 @@ namespace XeBus_GIS.UI
         {
             NutCoBan(b);
             b.Font = Theme.FontThuong;
-            b.FlatAppearance.MouseOverBackColor = ColorTranslator.FromHtml("#FEF2F2");
-            b.FlatAppearance.MouseDownBackColor = ColorTranslator.FromHtml("#FEE2E2");
-            GanTrangThai(b, KieuNut.NguyHiem, Theme.Surface, Theme.Danger, ColorTranslator.FromHtml("#FECACA"), 1);
+            b.FlatAppearance.MouseOverBackColor = Theme.DangerSoft;
+            b.FlatAppearance.MouseDownBackColor = Theme.DangerSoftPressed;
+            GanTrangThai(b, KieuNut.NguyHiem, Theme.Surface, Theme.Danger, Theme.DangerBorder, 1);
+            ThemeManager.DangKy(b, "nut", () => NutNguyHiem(b));
         }
 
         /// <summary>Nút nguy hiểm dạng chính (xác nhận xoá trong hộp thoại).</summary>
@@ -152,7 +156,8 @@ namespace XeBus_GIS.UI
             b.Font = Theme.FontDam;
             b.FlatAppearance.MouseOverBackColor = Theme.DangerHover;
             b.FlatAppearance.MouseDownBackColor = Theme.DangerHover;
-            GanTrangThai(b, KieuNut.NguyHiemChinh, Theme.Danger, Color.White, Theme.Danger, 0);
+            GanTrangThai(b, KieuNut.NguyHiemChinh, Theme.Danger, Theme.Toi ? Theme.ChuTrenAccent : Color.White, Theme.Danger, 0);
+            ThemeManager.DangKy(b, "nut", () => NutNguyHiemChinh(b));
         }
 
         /// <summary>Nút chỉ có icon (toolbar) – bắt buộc có tooltip mô tả.</summary>
@@ -165,8 +170,9 @@ namespace XeBus_GIS.UI
             b.FlatAppearance.MouseDownBackColor = Theme.Border;
             b.AccessibleName = moTa;
             _tip.SetToolTip(b, moTa);
-            GanTrangThai(b, KieuNut.Icon, b.Parent?.BackColor == Theme.Background ? Theme.Background : Theme.Surface,
-                Theme.Secondary, Theme.Surface, 0);
+            var nen = b.Parent != null && b.Parent.BackColor.ToArgb() == Theme.Background.ToArgb() ? Theme.Background : Theme.Surface;
+            GanTrangThai(b, KieuNut.Icon, nen, Theme.Secondary, nen, 0);
+            ThemeManager.DangKy(b, "nut", () => NutIcon(b, glyph, moTa, coChu));
         }
 
         /// <summary>Đánh dấu nút công cụ đang bật (nền xanh nhạt, icon xanh).</summary>
@@ -268,8 +274,9 @@ namespace XeBus_GIS.UI
             b.BackColor = Theme.Surface;
             b.UseVisualStyleBackColor = false;
             b.Cursor = Cursors.Hand;
-            if (_tab.TryGetValue(b, out _)) return;
+            if (_tab.TryGetValue(b, out var daCo)) { ChonTab(b, daCo[0]); return; }
             _tab.Add(b, new[] { false });
+            ThemeManager.DangKy(b, "tab", () => Tab(b));
             b.Paint += (s, e) =>
             {
                 if (!_tab.TryGetValue(b, out var chon) || !chon[0]) return;
@@ -310,6 +317,7 @@ namespace XeBus_GIS.UI
         /// <summary>Thêm icon nhỏ trước chữ của nút (màu theo màu chữ hiện tại của nút).</summary>
         public static void GanIcon(Button b, string glyph, float coChu = 10f)
         {
+            ThemeManager.DangKy(b, "icon", () => b.Image = AnhIcon(glyph, b.Enabled ? b.ForeColor : Theme.Disabled, coChu));
             b.Image = AnhIcon(glyph, b.ForeColor, coChu);
             b.ImageAlign = ContentAlignment.MiddleCenter;
             b.TextImageRelation = TextImageRelation.ImageBeforeText;
@@ -352,10 +360,63 @@ namespace XeBus_GIS.UI
             foreach (var c in cs)
             {
                 c.Font = Theme.FontThuong;
-                c.ForeColor = Theme.Text;
                 if (c is TextBox t) t.BorderStyle = BorderStyle.FixedSingle;
-                if (c is ComboBox cb) cb.FlatStyle = FlatStyle.System;
+                MauO(c);
+                ThemeManager.DangKy(c, "o", () => MauO(c));
             }
+        }
+
+        /// <summary>
+        /// Màu ô nhập theo chế độ. ComboBox: sáng dùng kiểu hệ thống (gọn, quen mắt), tối phải dùng Flat vì kiểu hệ thống
+        /// luôn vẽ nền trắng.
+        /// </summary>
+        private static void MauO(Control c)
+        {
+            c.ForeColor = Theme.Text;
+            if (c is TextBox tb && !tb.Multiline) VienTextBox(tb, Theme.Toi);
+            if (c is ComboBox cb)
+            {
+                cb.FlatStyle = Theme.Toi ? FlatStyle.Flat : FlatStyle.System;
+                cb.BackColor = Theme.Surface;
+            }
+            else if (c is TextBox || c is NumericUpDown) c.BackColor = Theme.Surface;
+        }
+
+        private static readonly ConditionalWeakTable<TextBox, object> _oTuVe = new ConditionalWeakTable<TextBox, object>();
+        private static readonly ConditionalWeakTable<Control, object> _chaVeVien = new ConditionalWeakTable<Control, object>();
+
+        /// <summary>
+        /// Viền ô nhập: chế độ sáng dùng viền hệ thống (FixedSingle); chế độ tối viền hệ thống luôn sáng chói ⇒ bỏ viền
+        /// và để control cha vẽ khung mảnh theo theme (đổi màu khi ô đang nhập).
+        /// </summary>
+        private static void VienTextBox(TextBox t, bool tuVe)
+        {
+            if (!tuVe)
+            {
+                if (_oTuVe.TryGetValue(t, out _)) { _oTuVe.Remove(t); t.BorderStyle = BorderStyle.FixedSingle; t.Parent?.Invalidate(); }
+                return;
+            }
+            if (_oTuVe.TryGetValue(t, out _)) return;
+            _oTuVe.Add(t, null);
+            t.BorderStyle = BorderStyle.None;
+            var cha = t.Parent;
+            if (cha == null) return;
+            t.GotFocus += (s, e) => t.Parent?.Invalidate();
+            t.LostFocus += (s, e) => t.Parent?.Invalidate();
+            t.VisibleChanged += (s, e) => t.Parent?.Invalidate();
+            if (_chaVeVien.TryGetValue(cha, out _)) { cha.Invalidate(); return; }
+            _chaVeVien.Add(cha, null);
+            cha.Paint += (s, e) =>
+            {
+                foreach (Control con in cha.Controls)
+                {
+                    if (!(con is TextBox x) || !x.Visible || !_oTuVe.TryGetValue(x, out _)) continue;
+                    var r = Rectangle.Inflate(x.Bounds, Dp(2), Dp(2));
+                    using (var pen = new Pen(x.Focused ? Theme.Accent : Theme.BorderStrong))
+                        e.Graphics.DrawRectangle(pen, r.X, r.Y, r.Width - 1, r.Height - 1);
+                }
+            };
+            cha.Invalidate();
         }
 
         /// <summary>Kẻ một đường mảnh ở đáy panel (phân tách các khu vực).</summary>
@@ -487,29 +548,20 @@ namespace XeBus_GIS.UI
         // =====================================================================
         public static void Luoi(DataGridView g)
         {
-            g.BackgroundColor = Theme.Surface;
             g.BorderStyle = BorderStyle.None;
-            g.GridColor = Theme.Border;
             g.EnableHeadersVisualStyles = false;
             g.CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal;
             g.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.Single;
-            g.ColumnHeadersDefaultCellStyle.BackColor = Theme.SurfaceAlt;
-            g.ColumnHeadersDefaultCellStyle.ForeColor = Theme.Muted;
             g.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI Semibold", 9f);
-            g.ColumnHeadersDefaultCellStyle.SelectionBackColor = Theme.SurfaceAlt;
-            g.ColumnHeadersDefaultCellStyle.SelectionForeColor = Theme.Muted;
             g.ColumnHeadersDefaultCellStyle.Padding = new Padding(6, 0, 6, 0);
             g.ColumnHeadersDefaultCellStyle.WrapMode = DataGridViewTriState.False;
             g.ColumnHeadersHeight = Dp(32);
             g.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
             g.DefaultCellStyle.Font = Theme.FontThuong;
-            g.DefaultCellStyle.ForeColor = Theme.Text;
-            g.DefaultCellStyle.BackColor = Theme.Surface;
-            g.DefaultCellStyle.SelectionBackColor = Theme.RowSelect;
-            g.DefaultCellStyle.SelectionForeColor = Theme.Text;
             g.DefaultCellStyle.Padding = new Padding(6, 0, 6, 0);
-            g.AlternatingRowsDefaultCellStyle.BackColor = Theme.RowAlt;
-            g.AlternatingRowsDefaultCellStyle.SelectionBackColor = Theme.RowSelect;
+            MauLuoi(g);
+            ThemeManager.DangKy(g, "luoi", () => { MauLuoi(g); g.Invalidate(); });
+            HoverHang(g);
             g.RowTemplate.Height = Dp(28);
             g.RowHeadersVisible = false;
             g.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
@@ -520,6 +572,51 @@ namespace XeBus_GIS.UI
             g.AllowUserToResizeRows = false;
             g.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
             BatDoubleBuffer(g);
+        }
+
+        /// <summary>Màu của lưới theo chế độ hiện tại (gọi lại khi đổi sáng/tối).</summary>
+        private static void MauLuoi(DataGridView g)
+        {
+            g.BackgroundColor = Theme.Surface;
+            g.GridColor = Theme.Border;
+            g.ColumnHeadersDefaultCellStyle.BackColor = Theme.SurfaceAlt;
+            g.ColumnHeadersDefaultCellStyle.ForeColor = Theme.Muted;
+            g.ColumnHeadersDefaultCellStyle.SelectionBackColor = Theme.SurfaceAlt;
+            g.ColumnHeadersDefaultCellStyle.SelectionForeColor = Theme.Muted;
+            g.DefaultCellStyle.ForeColor = Theme.Text;
+            g.DefaultCellStyle.BackColor = Theme.Surface;
+            g.DefaultCellStyle.SelectionBackColor = Theme.RowSelect;
+            g.DefaultCellStyle.SelectionForeColor = Theme.Text;
+            g.AlternatingRowsDefaultCellStyle.BackColor = Theme.RowAlt;
+            g.AlternatingRowsDefaultCellStyle.ForeColor = Theme.Text;
+            g.AlternatingRowsDefaultCellStyle.SelectionBackColor = Theme.RowSelect;
+            g.AlternatingRowsDefaultCellStyle.SelectionForeColor = Theme.Text;
+        }
+
+        private static readonly ConditionalWeakTable<DataGridView, int[]> _hangHover = new ConditionalWeakTable<DataGridView, int[]>();
+
+        /// <summary>Tô nhẹ hàng đang rê chuột (không đổi lựa chọn).</summary>
+        private static void HoverHang(DataGridView g)
+        {
+            if (_hangHover.TryGetValue(g, out _)) return;
+            var h = new[] { -1 };
+            _hangHover.Add(g, h);
+            void Dat(int r)
+            {
+                if (r == h[0]) return;
+                int cu = h[0];
+                h[0] = r;
+                if (cu >= 0 && cu < g.Rows.Count) g.InvalidateRow(cu);
+                if (r >= 0 && r < g.Rows.Count) g.InvalidateRow(r);
+            }
+            g.CellMouseEnter += (s, e) => Dat(e.RowIndex);
+            g.MouseLeave += (s, e) => Dat(-1);
+            g.RowPrePaint += (s, e) =>
+            {
+                if (e.RowIndex != h[0] || e.RowIndex < 0 || e.RowIndex >= g.Rows.Count || g.Rows[e.RowIndex].Selected) return;
+                using (var br = new SolidBrush(Theme.RowHover)) e.Graphics.FillRectangle(br, e.RowBounds);
+                e.PaintParts &= ~DataGridViewPaintParts.Background;
+            };
         }
 
         /// <summary>Bật double buffering cho lưới (giảm nháy khi cuộn) – thuộc tính protected nên dùng reflection.</summary>
@@ -621,10 +718,29 @@ namespace XeBus_GIS.UI
         /// <summary>Kiểu dáng biểu đồ thống nhất: nền trắng, lưới mảnh, chữ Muted, không viền 3D.</summary>
         public static void BieuDo(System.Windows.Forms.DataVisualization.Charting.Chart c)
         {
-            c.BackColor = Theme.Surface;
             c.BorderlineWidth = 0;
             c.AntiAliasing = System.Windows.Forms.DataVisualization.Charting.AntiAliasingStyles.All;
             c.TextAntiAliasingQuality = System.Windows.Forms.DataVisualization.Charting.TextAntiAliasingQuality.High;
+            foreach (var a in c.ChartAreas)
+            {
+                foreach (var ax in new[] { a.AxisX, a.AxisY })
+                {
+                    ax.LabelStyle.Font = Theme.FontNho;
+                    ax.TitleFont = Theme.FontNho;
+                }
+                a.AxisX.MajorGrid.Enabled = false;
+                a.AxisX.MajorTickMark.Enabled = false;
+                a.AxisX.Interval = 1;
+            }
+            foreach (var l in c.Legends) l.Font = Theme.FontNho;
+            MauBieuDo(c);
+            ThemeManager.DangKy(c, "bieudo", () => MauBieuDo(c));
+        }
+
+        /// <summary>Màu nền/trục/chữ của biểu đồ theo chế độ hiện tại (màu series giữ nguyên – mang nghĩa dữ liệu).</summary>
+        public static void MauBieuDo(System.Windows.Forms.DataVisualization.Charting.Chart c)
+        {
+            c.BackColor = Theme.Surface;
             foreach (var a in c.ChartAreas)
             {
                 a.BackColor = Theme.Surface;
@@ -634,20 +750,16 @@ namespace XeBus_GIS.UI
                     ax.MajorGrid.LineColor = Theme.Border;
                     ax.MajorTickMark.LineColor = Theme.Border;
                     ax.LabelStyle.ForeColor = Theme.Muted;
-                    ax.LabelStyle.Font = Theme.FontNho;
                     ax.TitleForeColor = Theme.Muted;
-                    ax.TitleFont = Theme.FontNho;
                 }
-                a.AxisX.MajorGrid.Enabled = false;
-                a.AxisX.MajorTickMark.Enabled = false;
-                a.AxisX.Interval = 1;
             }
             foreach (var l in c.Legends)
             {
                 l.BackColor = Theme.Surface;
                 l.ForeColor = Theme.Secondary;
-                l.Font = Theme.FontNho;
             }
+            foreach (var t in c.Titles) t.ForeColor = Theme.Primary;
+            foreach (var s in c.Series) s.LabelForeColor = Theme.Secondary;
         }
 
         // =====================================================================

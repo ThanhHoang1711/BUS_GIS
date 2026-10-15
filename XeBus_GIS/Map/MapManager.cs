@@ -166,7 +166,18 @@ namespace XeBus_GIS.Map
         };
         // Esri World Light Gray Canvas: nền xám nhạt rất ít chi tiết (chuẩn làm nền bản đồ chuyên đề) + lớp nhãn riêng;
         // Esri World Street Map: bản đồ phố đầy đủ nhưng màu dịu hơn OSM. Thứ tự ô của Esri là {z}/{y}/{x}.
-        private const int IdNenEsriXam = 2023, IdNenEsriPho = 2024;
+        private const int IdNenEsriXam = 2023, IdNenEsriPho = 2024, IdNenEsriToi = 2025;
+        // Esri World Dark Gray Canvas – nền tối giản cho chế độ tối (cùng bố cục với Light Gray)
+        private static readonly string[] NguonEsriToi =
+        {
+            "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+            "https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+        };
+        private static readonly string[] NhanEsriToi =
+        {
+            "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}",
+            "https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}",
+        };
         private static readonly string[] NguonEsriXam =
         {
             "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}",
@@ -182,12 +193,12 @@ namespace XeBus_GIS.Map
             "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
             "https://services.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
         };
-        private static MayChuNenCucBo _mayChuNhat, _mayChuGoc, _mayChuEsriXam, _mayChuEsriPho;
+        private static MayChuNenCucBo _mayChuNhat, _mayChuGoc, _mayChuEsriXam, _mayChuEsriPho, _mayChuEsriToi;
 
         /// <summary>Các nền chọn được (khoá App.config / lựa chọn người dùng, tên hiển thị).</summary>
         public static readonly (string khoa, string ten)[] CacNen =
         {
-            ("EsriXam", "Esri xám nhạt"), ("EsriPho", "Esri đường phố"), ("OSM", "OSM nhạt"), ("OSMChuan", "OSM chuẩn"), ("None", "Không nền"),
+            ("EsriXam", "Esri tối giản"), ("EsriPho", "Esri đường phố"), ("OSM", "OSM nhạt"), ("OSMChuan", "OSM chuẩn"), ("None", "Không nền"),
         };
 
         /// <summary>Khoá nền đang dùng.</summary>
@@ -207,15 +218,18 @@ namespace XeBus_GIS.Map
             if (nen.StartsWith("Esri", StringComparison.OrdinalIgnoreCase))
             {
                 bool pho = nen.Equals("EsriPho", StringComparison.OrdinalIgnoreCase);
+                bool toi = !pho && Theme.Toi;   // "Esri tối giản" theo chế độ: Light Gray (sáng) / Dark Gray (tối)
                 NenHienTai = pho ? "EsriPho" : "EsriXam";
                 try
                 {
                     var mc = pho ? (_mayChuEsriPho ?? (_mayChuEsriPho = new MayChuNenCucBo(NguonEsriPho, "esri_pho", 0.85f)))
+                           : toi ? (_mayChuEsriToi ?? (_mayChuEsriToi = new MayChuNenCucBo(NguonEsriToi, "esri_toi", 1f, NhanEsriToi)))
                                  : (_mayChuEsriXam ?? (_mayChuEsriXam = new MayChuNenCucBo(NguonEsriXam, "esri_xam", 1f, NhanEsriXam)));
-                    int idEsri = pho ? IdNenEsriPho : IdNenEsriXam;
+                    int idEsri = pho ? IdNenEsriPho : toi ? IdNenEsriToi : IdNenEsriXam;
                     var dsEsri = Map.Tiles.Providers;
                     if (dsEsri.get_IndexByProviderId(idEsri) < 0)
-                        dsEsri.Add(idEsri, pho ? "Esri World Street Map" : "Esri World Light Gray", mc.UrlChoMapWinGis, tkTileProjection.SphericalMercator, 0, pho ? 19 : 16);
+                        dsEsri.Add(idEsri, pho ? "Esri World Street Map" : toi ? "Esri World Dark Gray" : "Esri World Light Gray",
+                                   mc.UrlChoMapWinGis, tkTileProjection.SphericalMercator, 0, pho ? 19 : 16);
                     Map.Tiles.ProviderId = idEsri;
                     BanQuyenNen = "Nền: Esri, HERE, Garmin, © OpenStreetMap contributors";
                     Map.Redraw();
@@ -566,6 +580,30 @@ namespace XeBus_GIS.Map
                 cat.DrawingOptions.LineWidth = 1;
             }
         };
+
+        /// <summary>
+        /// Đổi chế độ sáng/tối: nền khung bản đồ, nét ranh giới/đường (sửa DrawingOptions tại chỗ – KHÔNG nạp lại dữ liệu,
+        /// giữ nguyên khung nhìn, lớp tạm, đối tượng đang chọn) và nền Esri tối giản sáng ↔ tối.
+        /// </summary>
+        public void ApDungTheme()
+        {
+            Map.LockWindow(tkLockMode.lmLock);
+            try
+            {
+                var ext = Map.Extents;
+                Map.BackColor = Theme.Background;
+                if (_lop.TryGetValue(RanhGioi, out var rg) && rg.Sf != null) rg.Sf.DefaultDrawingOptions.LineColor = Theme.Ole(Theme.MapRanhGioi);
+                if (_lop.TryGetValue(PhuongXa, out var px) && px.Sf != null) px.Sf.DefaultDrawingOptions.LineColor = Theme.Ole(Theme.MapPhuongXa);
+                if (_lop.TryGetValue(DoanDuong, out var dd) && dd.Sf != null) dd.Sf.DefaultDrawingOptions.LineColor = Theme.Ole(Theme.MapDuong);
+                if (NenHienTai == "EsriXam") DatNenBanDo("EsriXam");
+                Map.Extents = ext;
+            }
+            finally
+            {
+                Map.LockWindow(tkLockMode.lmUnlock);
+            }
+            Map.Redraw();
+        }
 
         /// <summary>Phân lớp màu cho lớp tạm đường (polyline): cột "kieu" = "0".."n-1" ứng với mau[i], nét rộng rong px.</summary>
         public static Action<Shapefile> KieuDuongPhanLop(Color[] mau, float rong = 5) => sf =>

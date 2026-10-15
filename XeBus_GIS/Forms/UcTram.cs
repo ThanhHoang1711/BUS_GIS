@@ -395,6 +395,9 @@ namespace XeBus_GIS.Forms
         // =====================================================================
         // 1.4 Cập nhật thuộc tính trạm
         // =====================================================================
+        /// <summary>Mở hộp thoại sửa trạm từ nơi khác (thẻ thông tin ở panel phải).</summary>
+        public Task SuaTramAsync(string maTram) => MoFormSuaAsync(maTram);
+
         private async Task MoFormSuaAsync(string maTram)
         {
             if (!Session.Co(Quyen.TramCapNhat)) return;

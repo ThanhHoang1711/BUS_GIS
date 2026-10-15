@@ -177,7 +177,7 @@ namespace XeBus_GIS.UI.Controls
                     {
                         using (var br = new SolidBrush(Theme.Accent)) g.FillPath(br, path);
                         using (var f = Theme.FontIcon(8f))
-                            TextRenderer.DrawText(g, Icons.ThanhCong, f, o, Color.White, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix);
+                            TextRenderer.DrawText(g, Icons.ThanhCong, f, o, Theme.ChuTrenAccent, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix);
                     }
                     else
                     {

@@ -146,9 +146,9 @@ namespace XeBus_GIS.UI.Controls
             string icon;
             switch (_kieu)
             {
-                case KieuThongBao.ThanhCong: mau = Theme.Success; nenIcon = ColorTranslator.FromHtml("#DCFCE7"); icon = Icons.ThanhCong; break;
-                case KieuThongBao.CanhBao: mau = Theme.WarningText; nenIcon = ColorTranslator.FromHtml("#FEF3C7"); icon = Icons.CanhBao; break;
-                case KieuThongBao.Loi: mau = Theme.Danger; nenIcon = ColorTranslator.FromHtml("#FEE2E2"); icon = Icons.Loi; break;
+                case KieuThongBao.ThanhCong: mau = Theme.Success; Theme.MauTrangThai("Thành công", out nenIcon, out _); icon = Icons.ThanhCong; break;
+                case KieuThongBao.CanhBao: mau = Theme.WarningText; Theme.MauTrangThai("Chờ duyệt", out nenIcon, out _); icon = Icons.CanhBao; break;
+                case KieuThongBao.Loi: mau = Theme.Danger; Theme.MauTrangThai("Thất bại", out nenIcon, out _); icon = Icons.Loi; break;
                 default: mau = Theme.Accent; nenIcon = Theme.AccentSoft; icon = Icons.Thong_Tin; break;
             }
             using (var pen = new Pen(Theme.Border))
