@@ -27,6 +27,7 @@ namespace XeBus_GIS.Forms
         public FrmChonViTri()
         {
             InitializeComponent();
+            UI.UiHelper.CoGianDpi(this);   // co giãn theo DPI ngay – trước khi code dựng thêm control bằng UiHelper.Dp()
         }
 
         public FrmChonViTri(CheDo cheDo, DataTable phuong, ViTriNguoiDung hienTai) : this()

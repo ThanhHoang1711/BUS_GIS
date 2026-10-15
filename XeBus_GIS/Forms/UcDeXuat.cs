@@ -50,6 +50,7 @@ namespace XeBus_GIS.Forms
         public UcDeXuat()
         {
             InitializeComponent();
+            UI.UiHelper.CoGianDpi(this);   // co giãn theo DPI ngay – trước khi code dựng thêm control bằng UiHelper.Dp()
         }
 
         public UcDeXuat(BoiCanh boiCanh) : this()

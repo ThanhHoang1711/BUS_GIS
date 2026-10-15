@@ -24,16 +24,32 @@ namespace XeBus_GIS.Data
         // ------------------------------------------------------------------
         // Người dùng
         // ------------------------------------------------------------------
-        public static DataTable DanhSachNguoiDung(string tuKhoa) =>
+        /// <summary>Danh sách người dùng; tài khoản "Chờ duyệt" luôn xếp đầu. chiChoDuyet = chỉ lấy tài khoản đang chờ duyệt.</summary>
+        public static DataTable DanhSachNguoiDung(string tuKhoa, bool chiChoDuyet = false) =>
             Db.Query(@"SELECT n.idndung AS id, n.tendnhap AS ""Tên đăng nhập"", n.tenndung AS ""Họ tên"",
                               g.tennhom AS ""Nhóm"", n.chucvu AS ""Chức vụ"", n.donvi AS ""Đơn vị"", n.trangthai AS ""Trạng thái"",
                               (SELECT to_char(max(l.tgdangnhap), 'DD/MM/YYYY HH24:MI') FROM xebus.ls_dnhap l
                                 WHERE l.idndung = n.idndung AND l.ketqua = 'Thành công') AS ""Đăng nhập gần nhất"",
                               n.idnhom
                        FROM xebus.nguoidung n JOIN xebus.n_ngdung g ON g.idnhom = n.idnhom
-                       WHERE @tk = '' OR xebus.unaccent_vn(n.tendnhap || ' ' || n.tenndung || ' ' || coalesce(n.donvi, ''))
-                                         LIKE '%' || xebus.unaccent_vn(@tk) || '%'
-                       ORDER BY n.idnhom DESC, n.tendnhap", "@tk", (tuKhoa ?? "").Trim());
+                       WHERE (@tk = '' OR xebus.unaccent_vn(n.tendnhap || ' ' || n.tenndung || ' ' || coalesce(n.donvi, ''))
+                                           LIKE '%' || xebus.unaccent_vn(@tk) || '%')
+                         AND (NOT @cd OR n.trangthai = @ttcd)
+                       ORDER BY (n.trangthai = @ttcd) DESC, n.idnhom DESC, n.tendnhap",
+                "@tk", (tuKhoa ?? "").Trim(), "@cd", chiChoDuyet, "@ttcd", NguoiDungRepository.TrangThaiChoDuyet);
+
+        /// <summary>
+        /// Duyệt tài khoản tự đăng ký: "Chờ duyệt" → "Hoạt động" và gán nhóm. Trả false nếu tài khoản không còn ở trạng thái
+        /// chờ duyệt (đã được người khác duyệt / xoá).
+        /// </summary>
+        public static bool Duyet(int id, int idNhom) =>
+            Db.Execute("UPDATE xebus.nguoidung SET trangthai = 'Hoạt động', idnhom = @nhom WHERE idndung = @id AND trangthai = @cd",
+                       "@nhom", idNhom, "@id", id, "@cd", NguoiDungRepository.TrangThaiChoDuyet) == 1;
+
+        /// <summary>Từ chối tài khoản tự đăng ký = xoá bản ghi đang chờ duyệt (người đó có thể đăng ký lại).</summary>
+        public static bool TuChoi(int id) =>
+            Db.Execute("DELETE FROM xebus.nguoidung WHERE idndung = @id AND trangthai = @cd",
+                       "@id", id, "@cd", NguoiDungRepository.TrangThaiChoDuyet) == 1;
 
         public static DataRow LayNguoiDung(int id)
         {
@@ -160,8 +176,8 @@ namespace XeBus_GIS.Data
                        FROM xebus.saoluu s LEFT JOIN xebus.nguoidung n ON n.idndung = s.idndung
                        ORDER BY s.thoigian DESC");
 
-        public static string ThuMucSaoLuu => ConfigurationManager.AppSettings["BackupFolder"] ?? @"D:\XeBus_GIS\database\backup";
-        public static string ThuMucPgBin => ConfigurationManager.AppSettings["PgBinPath"] ?? @"C:\Program Files\PostgreSQL\17\bin";
+        public static string ThuMucSaoLuu => CauHinh.Doc("BackupFolder") ?? @"D:\XeBus_GIS\database\backup";
+        public static string ThuMucPgBin => CauHinh.Doc("PgBinPath") ?? @"C:\Program Files\PostgreSQL\17\bin";
 
         /// <summary>
         /// Sao lưu schema xebus (dữ liệu nghiệp vụ + bảo mật của hệ thống) bằng pg_dump định dạng custom.

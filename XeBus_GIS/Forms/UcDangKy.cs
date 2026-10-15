@@ -22,6 +22,7 @@ namespace XeBus_GIS.Forms
         public UcDangKy()
         {
             InitializeComponent();
+            UI.UiHelper.CoGianDpi(this);   // co giãn theo DPI ngay – trước khi code dựng thêm control bằng UiHelper.Dp()
         }
 
         /// <summary>Áp giao diện + gắn sự kiện (gọi từ trang đăng nhập; tách khỏi ctor để VS Designer mở được).</summary>

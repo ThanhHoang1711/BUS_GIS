@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Cấu hình RIÊNG cho máy của bạn (mật khẩu PostgreSQL, đường dẫn…).
+  Cách dùng: chép file này thành "App.local.config" (cùng thư mục XeBus_GIS) rồi sửa mật khẩu bên dưới.
+  App.local.config đã có trong .gitignore ⇒ KHÔNG bao giờ bị commit / đẩy lên GitHub.
+  Khoá nào ghi ở đây sẽ ghi đè khoá cùng tên trong App.config; khoá không ghi thì lấy theo App.config.
+-->
+<configuration>
+  <connectionStrings>
+    <add name="CSDLKG"
+         connectionString="Host=localhost;Port=5432;Database=CSDLKG;Username=postgres;Password=MAT_KHAU_POSTGRES;Search Path=xebus,public;Timeout=15;Command Timeout=120" />
+  </connectionStrings>
+  <appSettings>
+    <!-- Tuỳ chọn – bỏ chú thích nếu máy bạn khác mặc định:
+    <add key="PgBinPath" value="C:\Program Files\PostgreSQL\17\bin" />
+    <add key="BackupFolder" value="D:\XeBus_GIS\database\backup" />
+    -->
+  </appSettings>
+</configuration>

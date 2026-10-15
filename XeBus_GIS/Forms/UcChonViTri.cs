@@ -108,6 +108,7 @@ namespace XeBus_GIS.Forms
         public UcChonViTri()
         {
             InitializeComponent();
+            UI.UiHelper.CoGianDpi(this);   // co giãn theo DPI ngay – trước khi code dựng thêm control bằng UiHelper.Dp()
         }
 
         public UcChonViTri(BoiCanh boiCanh) : this()

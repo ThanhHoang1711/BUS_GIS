@@ -20,9 +20,18 @@ namespace XeBus_GIS.Data
             {
                 if (_connStr == null)
                 {
-                    var cs = ConfigurationManager.ConnectionStrings["CSDLKG"];
-                    if (cs == null) throw new ConfigurationErrorsException("Thiếu connectionString 'CSDLKG' trong App.config");
-                    _connStr = cs.ConnectionString;
+                    // App.local.config (riêng máy, không commit) ghi đè App.config – xem Data/CauHinh.cs
+                    var cs = CauHinh.ChuoiKetNoi("CSDLKG");
+                    if (string.IsNullOrWhiteSpace(cs))
+                        throw new ConfigurationErrorsException("Thiếu chuỗi kết nối 'CSDLKG' (App.config / App.local.config).");
+                    string mk;
+                    try { mk = new NpgsqlConnectionStringBuilder(cs).Password; }
+                    catch (Exception ex) { throw new ConfigurationErrorsException("Chuỗi kết nối 'CSDLKG' sai định dạng: " + ex.Message, ex); }
+                    if (string.IsNullOrEmpty(mk) || mk.Trim('<', '>') == CauHinh.MatKhauGiuCho)
+                        throw new ConfigurationErrorsException(CauHinh.DuongDanFileRieng == null
+                            ? "Chưa đặt mật khẩu CSDL: chép App.local.config.example thành App.local.config, điền mật khẩu."
+                            : "Chưa điền mật khẩu CSDL trong App.local.config (" + CauHinh.DuongDanFileRieng + ").");
+                    _connStr = cs;
                 }
                 return _connStr;
             }

@@ -435,8 +435,8 @@
             //
             // UcQuanTri
             //
-            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 17F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.None;   // co giãn DPI bằng UiHelper.CoGianDpi (xem ctor)
             this.Size = new System.Drawing.Size(1100, 680);
             this.Controls.Add(this.tab);
             this.Controls.Add(this.lblTieuDe);

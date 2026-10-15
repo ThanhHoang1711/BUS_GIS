@@ -38,8 +38,11 @@ namespace XeBus_GIS.UI.Controls
         private int _rongDich;
         private string _tipDangHien;
 
-        public int RongMo { get; set; } = UiHelper.Dp(220);
-        public int RongThu { get; set; } = UiHelper.Dp(56);
+        /// <summary>Độ rộng khi mở / thu gọn – px THIẾT KẾ ở 96 DPI (Designer ghi giá trị này), đổi sang px thật bằng Dp().</summary>
+        public int RongMo { get; set; } = 220;
+        public int RongThu { get; set; } = 56;
+        private int RongMoPx => UiHelper.Dp(RongMo);
+        private int RongThuPx => UiHelper.Dp(RongThu);
 
         private int CaoThuongHieu => UiHelper.Dp(64);
         private int CaoMuc => UiHelper.Dp(40);
@@ -59,7 +62,7 @@ namespace XeBus_GIS.UI.Controls
             SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer |
                      ControlStyles.ResizeRedraw | ControlStyles.UserPaint | ControlStyles.Selectable, true);
             BackColor = Theme.Sidebar;
-            Width = RongMo;
+            Width = RongMoPx;
             TabStop = true;
             _timer.Tick += Tick;
         }
@@ -101,7 +104,7 @@ namespace XeBus_GIS.UI.Controls
             {
                 if (_thuGon == value) return;
                 _thuGon = value;
-                _rongDich = value ? RongThu : RongMo;
+                _rongDich = value ? RongThuPx : RongMoPx;
                 if (!_timer.Enabled) DangChuyenDong?.Invoke(true);
                 _timer.Start();
             }
@@ -125,7 +128,7 @@ namespace XeBus_GIS.UI.Controls
         // =====================================================================
         // Bố cục
         // =====================================================================
-        private bool DangGon => Width < (RongMo + RongThu) / 2;
+        private bool DangGon => Width < (RongMoPx + RongThuPx) / 2;
 
         private void TinhBoCuc()
         {
@@ -258,7 +261,7 @@ namespace XeBus_GIS.UI.Controls
                     g.DrawPath(pen, path);
 
             var mau = chon ? Theme.Accent : Theme.Secondary;
-            var rIcon = new Rectangle(r.X, r.Y, RongThu - UiHelper.Dp(16), r.Height);
+            var rIcon = new Rectangle(r.X, r.Y, RongThuPx - UiHelper.Dp(16), r.Height);
             using (var f = Theme.FontIcon(12f))
                 TextRenderer.DrawText(g, m.Icon, f, rIcon, mau, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix);
             if (!gon)

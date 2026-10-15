@@ -71,6 +71,10 @@ namespace XeBus_GIS.Forms
         public FrmMain()
         {
             InitializeComponent();
+            UI.UiHelper.CoGianDpi(this);   // co giãn theo DPI ngay – trước khi code dựng thêm control bằng UiHelper.Dp()
+            // Splitter.MinSize/MinExtra không được Scale() co giãn – đặt lại theo DPI
+            splTrai.MinSize = UiHelper.Dp(320); splTrai.MinExtra = UiHelper.Dp(300);
+            splPhai.MinSize = UiHelper.Dp(240); splPhai.MinExtra = UiHelper.Dp(300);
             TaoBanDo();
             ApDungGiaoDien();
             TaoNutTheme();
@@ -430,7 +434,7 @@ namespace XeBus_GIS.Forms
 
         /// <summary>Nền người dùng đã chọn lần trước; chưa chọn thì theo App.config (NenBanDo), rồi mặc định Esri.</summary>
         private static string NenDaLuu() =>
-            CaiDatNguoiDung.Doc(CaiDatNguoiDung.KhoaNen) ?? System.Configuration.ConfigurationManager.AppSettings["NenBanDo"];
+            CaiDatNguoiDung.Doc(CaiDatNguoiDung.KhoaNen) ?? Data.CauHinh.Doc("NenBanDo");
 
         /// <summary>Thanh trạng thái: hệ toạ độ hiển thị/dữ liệu + bản quyền nền rút gọn (đầy đủ ở tooltip).</summary>
         private void DatChuHeToaDo()

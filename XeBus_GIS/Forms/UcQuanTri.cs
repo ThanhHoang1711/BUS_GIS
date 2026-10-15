@@ -18,6 +18,14 @@ namespace XeBus_GIS.Forms
     public partial class UcQuanTri : UserControl, IModule
     {
         private int? _idDangSua;       // null = đang thêm mới
+        // duyệt tài khoản tự đăng ký
+        private XeBus_GIS.UI.Controls.NhomChip _locND;   // Tất cả | Chờ duyệt (n)
+        private Panel _pnlDuyet;
+        private Label _lblDuyet;
+        private ComboBox _cboNhomDuyet;
+        private Button _btnDuyet, _btnTuChoi;
+        private bool _boQuaLoc;
+        private int _soChoDuyet;
         private bool _dangNapQuyen;
 
         private bool _daNap;
@@ -26,6 +34,7 @@ namespace XeBus_GIS.Forms
         public UcQuanTri()
         {
             InitializeComponent();
+            UI.UiHelper.CoGianDpi(this);   // co giãn theo DPI ngay – trước khi code dựng thêm control bằng UiHelper.Dp()
         }
 
         public UcQuanTri(BoiCanh boiCanh) : this()
@@ -34,6 +43,7 @@ namespace XeBus_GIS.Forms
             PhanQuyen();
             TaoThanhTab();
             GanSuKien();
+            TaoKhuDuyet();
         }
 
         // =====================================================================
@@ -55,8 +65,20 @@ namespace XeBus_GIS.Forms
             try
             {
                 int so = await Task.Run(() => QuanTriRepository.SoChoDuyet());
-                if (so > 0)
-                    UiHelper.CanhBao(this, $"Có {so} tài khoản tự đăng ký đang chờ duyệt. Chọn tài khoản, sửa trạng thái thành \"Hoạt động\" (và nhóm nếu cần).");
+                DatSoChoDuyet(so);
+                if (so > 0 && _locND != null && tab.TabPages.Contains(tpNguoiDung))
+                {
+                    // mở thẳng danh sách chờ duyệt
+                    tab.SelectedTab = tpNguoiDung;
+                    if (_locND.Chon != 1)
+                    {
+                        _boQuaLoc = true;
+                        _locND.Chon = 1;
+                        _boQuaLoc = false;
+                        if (_daNap) await NapNguoiDungAsync();
+                    }
+                    UiHelper.CanhBao(this, $"Có {so} tài khoản tự đăng ký đang chờ duyệt – chọn từng tài khoản rồi bấm \"Duyệt tài khoản\" hoặc \"Từ chối\".");
+                }
             }
             catch { /* chỉ là nhắc nhở */ }
         }
@@ -247,6 +269,12 @@ namespace XeBus_GIS.Forms
                 cboNhom.DisplayMember = "ten";
                 cboNhom.ValueMember = "ma";
                 cboNhom.DataSource = nhom.Copy();
+                if (_cboNhomDuyet != null)
+                {
+                    _cboNhomDuyet.DisplayMember = "ten";
+                    _cboNhomDuyet.ValueMember = "ma";
+                    _cboNhomDuyet.DataSource = nhom.Copy();
+                }
                 lstNhom.DisplayMember = "ten";
                 lstNhom.ValueMember = "ma";
                 _dangNapQuyen = true;
@@ -270,11 +298,20 @@ namespace XeBus_GIS.Forms
         private async Task NapNguoiDungAsync()
         {
             var tk = txtTim.Text;
+            bool chiCho = _locND != null && _locND.Chon == 1;
             DataTable dt = null;
-            if (!await UiHelper.ChayAsync(btnTimND, async () => dt = await Task.Run(() => QuanTriRepository.DanhSachNguoiDung(tk)), "…")) return;
+            int so = 0;
+            if (!await UiHelper.ChayAsync(btnTimND, async () => dt = await Task.Run(() =>
+                {
+                    so = QuanTriRepository.SoChoDuyet();
+                    return QuanTriRepository.DanhSachNguoiDung(tk, chiCho);
+                }), "…")) return;
+            DatSoChoDuyet(so);
             dgvND.DataSource = dt;
             foreach (var c in new[] { "id", "idnhom" }) if (dgvND.Columns.Contains(c)) dgvND.Columns[c].Visible = false;
             dgvND.ClearSelection();
+            HienKhuDuyet(null);
+            UiHelper.TrangThaiRong(dgvND, chiCho ? "Không có tài khoản nào đang chờ duyệt." : "Không có người dùng phù hợp.");
         }
 
         private async Task ChonNguoiDungAsync()
@@ -297,6 +334,7 @@ namespace XeBus_GIS.Forms
             txtMatKhau.Clear();
             txtXacNhan.Clear();
             lblLoiND.Visible = false;
+            HienKhuDuyet(Db.Str(r, "trangthai") == NguoiDungRepository.TrangThaiChoDuyet ? r : null);
             btnLuuND.Enabled = Session.Co(Quyen.QtNguoiDung, Quyen.Sua);
             btnDatLaiMK.Enabled = Session.Co(Quyen.QtNguoiDung, Quyen.Sua);
             btnXoaND.Enabled = Session.Co(Quyen.QtNguoiDung, Quyen.Xoa) && id != Session.IdNguoiDung;
@@ -314,6 +352,7 @@ namespace XeBus_GIS.Forms
             btnDatLaiMK.Enabled = false;
             btnXoaND.Enabled = false;
             dgvND.ClearSelection();
+            HienKhuDuyet(null);
             txtTenDN.Focus();
         }
 
@@ -385,6 +424,145 @@ namespace XeBus_GIS.Forms
             if (!UiHelper.XacNhanNguyHiem(this, $"Xoá người dùng \"{txtTenDN.Text}\"?\nThao tác không hoàn tác được. Lịch sử đăng nhập của người này vẫn được giữ lại.")) return;
             int id = _idDangSua.Value;
             if (!await UiHelper.ChayAsync(btnXoaND, () => Task.Run(() => QuanTriRepository.Xoa(id)), "Đang xoá…")) return;
+            CheDoThemMoi();
+            await NapNguoiDungAsync();
+        }
+
+        // =====================================================================
+        // Duyệt tài khoản tự đăng ký (UcDangKy tạo nhóm Khách hàng, trạng thái "Chờ duyệt")
+        // =====================================================================
+        private void TaoKhuDuyet()
+        {
+            if (!tab.TabPages.Contains(tpNguoiDung)) return;
+            int le = UiHelper.Dp(12);
+
+            // bộ lọc phía trên lưới
+            _locND = new XeBus_GIS.UI.Controls.NhomChip
+            {
+                Location = new System.Drawing.Point(dgvND.Left, dgvND.Top),
+                Width = dgvND.Width,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
+                BackColor = Theme.Surface,
+            };
+            _locND.Dat(new[] { "Tất cả", "Chờ duyệt" });
+            int dich = _locND.Height + UiHelper.Dp(8);
+            dgvND.SetBounds(dgvND.Left, dgvND.Top + dich, dgvND.Width, dgvND.Height - dich);
+            tpNguoiDung.Controls.Add(_locND);
+            _locND.ChonDoi += async i => { if (!_boQuaLoc) { CheDoThemMoi(); await NapNguoiDungAsync(); } };
+            UiHelper.TipCho(_locND, "Lọc danh sách: tất cả người dùng / chỉ tài khoản tự đăng ký đang chờ quản trị viên duyệt");
+
+            // khung duyệt dưới lưới – chỉ hiện khi chọn một tài khoản "Chờ duyệt"
+            _pnlDuyet = new Panel
+            {
+                Height = UiHelper.Dp(112),
+                Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right,
+                BackColor = Theme.SurfaceAlt,
+                Visible = false,
+            };
+            _pnlDuyet.SetBounds(dgvND.Left, dgvND.Bottom - _pnlDuyet.Height, dgvND.Width, _pnlDuyet.Height);
+            _pnlDuyet.Paint += (s, e) =>
+            {
+                var rc = _pnlDuyet.ClientRectangle;
+                using (var pen = new System.Drawing.Pen(Theme.Border)) e.Graphics.DrawRectangle(pen, 0, 0, rc.Width - 1, rc.Height - 1);
+                using (var br = new System.Drawing.SolidBrush(Theme.Warning)) e.Graphics.FillRectangle(br, 0, 0, UiHelper.Dp(4), rc.Height);
+            };
+            _lblDuyet = new Label
+            {
+                AutoSize = false,
+                Location = new System.Drawing.Point(le + UiHelper.Dp(4), UiHelper.Dp(10)),
+                Size = new System.Drawing.Size(_pnlDuyet.Width - 2 * le - UiHelper.Dp(4), UiHelper.Dp(44)),
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
+                Font = Theme.FontThuong,
+                ForeColor = Theme.Text,
+                UseMnemonic = false,
+            };
+            var lblNhomDuyet = new Label
+            {
+                AutoSize = true,
+                Text = "Nhóm khi duyệt",
+                Location = new System.Drawing.Point(le + UiHelper.Dp(4), UiHelper.Dp(66)),
+            };
+            UiHelper.NhanTruong(lblNhomDuyet);
+            _cboNhomDuyet = new ComboBox
+            {
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                Width = UiHelper.Dp(170),
+            };
+            UiHelper.O(_cboNhomDuyet);
+            _btnDuyet = new Button { Text = "Duyệt tài khoản", Size = new System.Drawing.Size(UiHelper.Dp(150), UiHelper.Dp(34)), Anchor = AnchorStyles.Bottom | AnchorStyles.Right };
+            _btnTuChoi = new Button { Text = "Từ chối", Size = new System.Drawing.Size(UiHelper.Dp(96), UiHelper.Dp(34)), Anchor = AnchorStyles.Bottom | AnchorStyles.Right };
+            UiHelper.NutChinh(_btnDuyet);
+            UiHelper.NutNguyHiem(_btnTuChoi);
+            UiHelper.TipCho(_btnDuyet, "Cho phép tài khoản đăng nhập (trạng thái Hoạt động) với nhóm đã chọn");
+            UiHelper.TipCho(_btnTuChoi, "Xoá yêu cầu đăng ký này – người đó có thể đăng ký lại");
+            int yNut = _pnlDuyet.Height - _btnDuyet.Height - UiHelper.Dp(10);
+            _btnDuyet.Location = new System.Drawing.Point(_pnlDuyet.Width - le - _btnDuyet.Width, yNut);
+            _btnTuChoi.Location = new System.Drawing.Point(_btnDuyet.Left - UiHelper.Dp(8) - _btnTuChoi.Width, yNut);
+            _cboNhomDuyet.Location = new System.Drawing.Point(lblNhomDuyet.Right + UiHelper.Dp(8), yNut + (_btnDuyet.Height - _cboNhomDuyet.Height) / 2);
+            lblNhomDuyet.Top = _cboNhomDuyet.Top + (_cboNhomDuyet.Height - lblNhomDuyet.Height) / 2;
+            _pnlDuyet.Controls.AddRange(new Control[] { _lblDuyet, lblNhomDuyet, _cboNhomDuyet, _btnTuChoi, _btnDuyet });
+            tpNguoiDung.Controls.Add(_pnlDuyet);
+            _pnlDuyet.BringToFront();
+
+            _btnDuyet.Enabled = Session.Co(Quyen.QtNguoiDung, Quyen.Sua);
+            _btnTuChoi.Enabled = Session.Co(Quyen.QtNguoiDung, Quyen.Xoa);
+            _btnDuyet.Click += async (s, e) => await DuyetAsync();
+            _btnTuChoi.Click += async (s, e) => await TuChoiAsync();
+            DatSoChoDuyet(_soChoDuyet);
+        }
+
+        private void DatSoChoDuyet(int so)
+        {
+            _soChoDuyet = so;
+            if (_locND == null) return;
+            _locND.Dat(new[] { "Tất cả", so > 0 ? $"Chờ duyệt ({so})" : "Chờ duyệt" },
+                       new System.Drawing.Color?[] { null, so > 0 ? Theme.Warning : (System.Drawing.Color?)null });
+        }
+
+        /// <summary>r = tài khoản đang chờ duyệt vừa chọn (null ⇒ ẩn khung duyệt).</summary>
+        private void HienKhuDuyet(DataRow r)
+        {
+            if (_pnlDuyet == null) return;
+            bool hien = r != null;
+            if (hien == _pnlDuyet.Visible && !hien) return;
+            if (hien)
+            {
+                var dv = Db.Str(r, "donvi");
+                _lblDuyet.Text = $"Tài khoản \"{Db.Str(r, "tendnhap")}\" – {Db.Str(r, "tenndung")}{(string.IsNullOrWhiteSpace(dv) ? "" : " · " + dv)} " +
+                                 "tự đăng ký và đang chờ duyệt. Chọn nhóm rồi bấm \"Duyệt tài khoản\" để cho phép đăng nhập.";
+                if (_cboNhomDuyet.Items.Count > 0) _cboNhomDuyet.SelectedValue = Convert.ToInt32(r["idnhom"]);
+            }
+            if (hien != _pnlDuyet.Visible)
+            {
+                int h = _pnlDuyet.Height + UiHelper.Dp(8);
+                dgvND.Height += hien ? -h : h;
+                _pnlDuyet.Visible = hien;
+            }
+        }
+
+        private async Task DuyetAsync()
+        {
+            if (_idDangSua == null || _cboNhomDuyet.SelectedValue == null) return;
+            int id = _idDangSua.Value, nhom = Convert.ToInt32(_cboNhomDuyet.SelectedValue);
+            string ten = txtTenDN.Text, tenNhom = _cboNhomDuyet.Text;
+            bool ok = false;
+            if (!await UiHelper.ChayAsync(_btnDuyet, () => Task.Run(() => ok = QuanTriRepository.Duyet(id, nhom)), "Đang duyệt…")) return;
+            if (ok) UiHelper.ThanhCong(this, $"Đã duyệt \"{ten}\" (nhóm {tenNhom}) – tài khoản đăng nhập được ngay.");
+            else UiHelper.CanhBao(this, $"\"{ten}\" không còn ở trạng thái chờ duyệt (có thể đã được xử lý).");
+            CheDoThemMoi();
+            await NapNguoiDungAsync();
+        }
+
+        private async Task TuChoiAsync()
+        {
+            if (_idDangSua == null) return;
+            string ten = txtTenDN.Text;
+            if (!UiHelper.XacNhanNguyHiem(this, $"Từ chối yêu cầu đăng ký của \"{ten}\"?\nTài khoản đăng ký sẽ bị xoá; người đó có thể đăng ký lại.", "Từ chối")) return;
+            int id = _idDangSua.Value;
+            bool ok = false;
+            if (!await UiHelper.ChayAsync(_btnTuChoi, () => Task.Run(() => ok = QuanTriRepository.TuChoi(id)), "Đang xoá…")) return;
+            if (ok) UiHelper.ThanhCong(this, $"Đã từ chối yêu cầu đăng ký của \"{ten}\".");
+            else UiHelper.CanhBao(this, $"\"{ten}\" không còn ở trạng thái chờ duyệt (có thể đã được xử lý).");
             CheDoThemMoi();
             await NapNguoiDungAsync();
         }

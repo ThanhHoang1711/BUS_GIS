@@ -40,6 +40,54 @@ namespace XeBus_GIS.UI
         /// <summary>Đổi kích thước thiết kế (px ở 96 DPI) sang px thực tế.</summary>
         public static int Dp(int px) => (int)Math.Round(px * HeSoDpi);
 
+        private static readonly ConditionalWeakTable<Control, object> _daCoGianDpi = new ConditionalWeakTable<Control, object>();
+
+        /// <summary>
+        /// Co giãn form/UserControl dựng bằng Designer theo DPI – gọi NGAY sau InitializeComponent() (trước khi code dựng thêm
+        /// control bằng Dp()). Designer đặt AutoScaleMode.None + toạ độ thiết kế ở 96 DPI.
+        /// Không dùng auto-scale của WinForms: khi control gốc có Font khác mặc định (mọi Designer ở đây đặt Segoe UI 9.75),
+        /// WinForms scale Label/LinkLabel/ListBox HAI lần (×2,25 ở 150%), còn chế độ Font thì không scale control con nào
+        /// ⇒ chữ đè nhau trên màn hình 125–150%. Control tự lo DPI (UI.Controls dựng bằng Dp, UserControl đã tự co giãn)
+        /// chỉ được nhân vị trí/kích thước, không đi vào bên trong để tránh nhân hai lần.
+        /// </summary>
+        public static void CoGianDpi(Control goc)
+        {
+            _daCoGianDpi.GetValue(goc, _ => new object());
+            float k = HeSoDpi;
+            if (Math.Abs(k - 1f) < 0.01f) return;
+
+            var tach = new List<Tuple<Control, Control, int>>();
+            TimControlTuLoDpi(goc, goc, tach);
+            goc.SuspendLayout();
+            try
+            {
+                foreach (var t in tach) t.Item1.Controls.Remove(t.Item2);
+                goc.Scale(new SizeF(k, k));
+                tach.Sort((a, b) => a.Item3.CompareTo(b.Item3));
+                foreach (var t in tach)
+                {
+                    var c = t.Item2;
+                    c.SetBounds((int)Math.Round(c.Left * k), (int)Math.Round(c.Top * k),
+                                (int)Math.Round(c.Width * k), (int)Math.Round(c.Height * k));
+                    var m = c.Margin;
+                    c.Margin = new Padding((int)Math.Round(m.Left * k), (int)Math.Round(m.Top * k), (int)Math.Round(m.Right * k), (int)Math.Round(m.Bottom * k));
+                    t.Item1.Controls.Add(c);
+                    t.Item1.Controls.SetChildIndex(c, Math.Min(t.Item3, t.Item1.Controls.Count - 1));
+                }
+            }
+            finally { goc.ResumeLayout(true); }
+        }
+
+        private static void TimControlTuLoDpi(Control goc, Control cha, List<Tuple<Control, Control, int>> ds)
+        {
+            foreach (Control c in cha.Controls)
+            {
+                bool tuLo = _daCoGianDpi.TryGetValue(c, out _) || c.GetType().Namespace == typeof(ThanhDieuHuong).Namespace;
+                if (tuLo) ds.Add(Tuple.Create(cha, c, cha.Controls.GetChildIndex(c)));
+                else TimControlTuLoDpi(goc, c, ds);
+            }
+        }
+
         // =====================================================================
         // Nút – trạng thái hover / pressed / focus / disabled thống nhất
         // =====================================================================
