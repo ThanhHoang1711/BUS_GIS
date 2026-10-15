@@ -14,6 +14,8 @@ namespace XeBus_GIS
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
+            // chế độ sáng/tối đã chọn lần trước – áp dụng trước khi tạo form để mọi control đọc đúng màu
+            UI.Theme.ApDung(UI.CaiDatNguoiDung.Doc(UI.CaiDatNguoiDung.KhoaTheme) == "toi");
             Application.ThreadException += (s, e) =>
                 MessageBox.Show(e.Exception.GetBaseException().Message, "Lỗi không mong muốn", MessageBoxButtons.OK, MessageBoxIcon.Error);
 

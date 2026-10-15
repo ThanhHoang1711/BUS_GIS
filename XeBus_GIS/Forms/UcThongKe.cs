@@ -99,7 +99,68 @@ namespace XeBus_GIS.Forms
                       new ChuGiai("Chưa có dữ liệu KDC", Theme.Border, KieuKyHieu.Vung),
                       new ChuGiai("Ranh vùng phục vụ", Theme.Primary, KieuKyHieu.Duong));
             pnlChartPV.Controls.Add(_cgPV);
+            TaoKhungDuoi();
             HienTab("KV");
+        }
+
+        // =====================================================================
+        // Khung dưới bản đồ: biểu đồ | bảng số liệu của tab đang mở (cột trái chỉ còn điều kiện + KPI)
+        // =====================================================================
+        private Panel _duoi;
+        private readonly Dictionary<string, Control> _duoiTheoTab = new Dictionary<string, Control>();
+
+        private void TaoKhungDuoi()
+        {
+            _duoi = new Panel { BackColor = Theme.Surface };
+            foreach (var (tab, pnl, chart, luoi, tieuDe) in new[]
+            {
+                ("KV", pnlKV, pnlChartKV, dgvKV, "Theo khu vực"),
+                ("TU", pnlTU, pnlChartTU, dgvTU, "Theo tuyến"),
+                ("PV", pnlPV, pnlChartPV, dgvPV, "Phạm vi phục vụ"),
+            })
+            {
+                var bang = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 2, BackColor = Theme.Surface, Visible = false };
+                bang.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 42));
+                bang.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 58));
+                bang.RowStyles.Add(new RowStyle(SizeType.Absolute, UiHelper.Dp(36)));
+                bang.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+                bang.Controls.Add(TieuDeCot(tieuDe + " · biểu đồ"), 0, 0);
+                bang.Controls.Add(TieuDeCot("Bảng số liệu"), 1, 0);
+                pnl.Controls.Remove(chart);
+                pnl.Controls.Remove(luoi);
+                chart.Dock = DockStyle.Fill;
+                chart.Margin = new Padding(UiHelper.Dp(8), 0, UiHelper.Dp(8), UiHelper.Dp(4));
+                luoi.Dock = DockStyle.Fill;
+                luoi.Margin = new Padding(0);
+                bang.Controls.Add(chart, 0, 1);
+                bang.Controls.Add(luoi, 1, 1);
+                _duoi.Controls.Add(bang);
+                _duoiTheoTab[tab] = bang;
+
+                // cột trái: gợi ý kết quả nằm ở khung dưới
+                var goiY = new Label
+                {
+                    Text = "Biểu đồ và bảng số liệu hiển thị ở khung phía dưới bản đồ (kéo thanh chia để rộng hơn).",
+                    UseMnemonic = false, AutoSize = false,
+                    Location = new Point(UiHelper.Dp(12), chart == pnlChartTU ? clbTuyen.Bottom + UiHelper.Dp(48) : btnThongKeKV.Bottom + UiHelper.Dp(12)),
+                    Size = new Size(pnl.Width - UiHelper.Dp(24), UiHelper.Dp(40)),
+                    Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
+                };
+                UiHelper.ChuPhu(goiY);
+                pnl.Controls.Add(goiY);
+            }
+        }
+
+        private static Label TieuDeCot(string chu)
+        {
+            var l = new Label
+            {
+                Text = chu, Dock = DockStyle.Fill, UseMnemonic = false, TextAlign = ContentAlignment.MiddleLeft,
+                Padding = new Padding(UiHelper.Dp(12), 0, 0, 0), Margin = new Padding(0), BackColor = Theme.Surface,
+            };
+            UiHelper.TieuDeKhuVuc(l);
+            l.Paint += (s, e) => { using (var pen = new Pen(Theme.Border)) e.Graphics.DrawLine(pen, 0, l.Height - 1, l.Width, l.Height - 1); };
+            return l;
         }
 
         private static Chart TaoChart(Panel cha, string tieuDeTrucY, SeriesChartType kieu)
@@ -142,6 +203,8 @@ namespace XeBus_GIS.Forms
             pnlTU.Visible = tab == "TU";
             pnlPV.Visible = tab == "PV";
             (tab == "KV" ? pnlKV : tab == "TU" ? pnlTU : pnlPV).BringToFront();
+            if (_duoi != null)
+                foreach (var kv in _duoiTheoTab) kv.Value.Visible = kv.Key == tab;
             foreach (var kv in new[] { (btnTabKhuVuc, "KV"), (btnTabTuyen, "TU"), (btnTabPhamVi, "PV") })
                 UiHelper.ChonTab(kv.Item1, kv.Item2 == tab);
         }
@@ -189,6 +252,7 @@ namespace XeBus_GIS.Forms
         // =====================================================================
         public async void KichHoat()
         {
+            _bc.HienBangDuoi?.Invoke(_duoi);
             if (_daNap) return;
             _daNap = true;
             try
@@ -213,6 +277,7 @@ namespace XeBus_GIS.Forms
 
         public void NgungKichHoat()
         {
+            _bc.AnBangDuoi?.Invoke(_duoi);
             _bc.BanDo.XoaLopTam(LopKhuVuc);
             _bc.BanDo.XoaLopTam(LopPhucVu);
         }

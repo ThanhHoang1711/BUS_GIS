@@ -86,7 +86,7 @@ namespace XeBus_GIS.UI.Controls
                 if (dangMo)
                 {
                     using (var br = new SolidBrush(Theme.Accent)) g.FillEllipse(br, o);
-                    TextRenderer.DrawText(g, (i + 1).ToString(), Theme.FontDam, o, Color.White, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix);
+                    TextRenderer.DrawText(g, (i + 1).ToString(), Theme.FontDam, o, Theme.ChuTrenAccent, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix);
                 }
                 else if (xong)
                 {

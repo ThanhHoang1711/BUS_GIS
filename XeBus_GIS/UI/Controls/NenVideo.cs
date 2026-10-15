@@ -142,7 +142,7 @@ namespace XeBus_GIS.UI.Controls
                 Child = new TextBlock
                 {
                     Text = Icons.Bus, FontFamily = FontIcon, FontSize = 21,
-                    Foreground = new SolidColorBrush(Wpf(Theme.DnNhan)),
+                    Foreground = new SolidColorBrush(Wpf(Theme.DnPhu)),
                     HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center,
                 },
             };
