@@ -29,6 +29,7 @@ namespace XeBus_GIS.Forms
         public FrmGanTram()
         {
             InitializeComponent();
+            UI.UiHelper.CoGianDpi(this);   // co giãn theo DPI ngay – trước khi code dựng thêm control bằng UiHelper.Dp()
         }
 
         public FrmGanTram(DataRow tuyen, DataTable tramTrenTuyen, Action<DataTable> xemTruoc) : this()

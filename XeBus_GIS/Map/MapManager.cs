@@ -59,7 +59,7 @@ namespace XeBus_GIS.Map
         public void KhoiTao(string nen = null)
         {
             Map.Projection = tkMapProjection.PROJECTION_GOOGLE_MERCATOR;
-            DatNenBanDo(nen ?? ConfigurationManager.AppSettings["NenBanDo"]);
+            DatNenBanDo(nen ?? CauHinh.Doc("NenBanDo"));
             Map.ShowVersionNumber = false;
             Map.ShowRedrawTime = false;
             Map.ScalebarVisible = true;

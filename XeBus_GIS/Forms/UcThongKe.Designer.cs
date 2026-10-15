@@ -248,8 +248,8 @@
             //
             // UcThongKe
             //
-            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 17F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.None;   // co giãn DPI bằng UiHelper.CoGianDpi (xem ctor)
             this.Controls.Add(this.pnlNoiDung);
             this.Controls.Add(this.pnlNut);
             this.Controls.Add(this.pnlKpi);

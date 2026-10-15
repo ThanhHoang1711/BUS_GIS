@@ -94,6 +94,7 @@
     <Compile Include="Data\Db.cs" />
     <Compile Include="Data\NguoiDungRepository.cs" />
     <Compile Include="Data\BanDoRepository.cs" />
+    <Compile Include="Data\CauHinh.cs" />
     <Compile Include="Data\TramRepository.cs" />
     <Compile Include="Data\TuyenRepository.cs" />
     <Compile Include="Data\DeXuatRepository.cs" />
@@ -277,6 +278,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+    <None Include="App.local.config.example" />
     <Content Include="Assets\nen_dangnhap.mp4">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

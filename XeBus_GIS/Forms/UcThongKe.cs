@@ -44,6 +44,7 @@ namespace XeBus_GIS.Forms
         public UcThongKe()
         {
             InitializeComponent();
+            UI.UiHelper.CoGianDpi(this);   // co giãn theo DPI ngay – trước khi code dựng thêm control bằng UiHelper.Dp()
         }
 
         public UcThongKe(BoiCanh boiCanh) : this()

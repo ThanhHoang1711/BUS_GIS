@@ -13,6 +13,7 @@ namespace XeBus_GIS.Forms
         public FrmDangNhap()
         {
             InitializeComponent();
+            UI.UiHelper.CoGianDpi(this);   // co giãn theo DPI ngay – trước khi code dựng thêm control bằng UiHelper.Dp()
             ApDungGiaoDien();
             ThemeManager.TieuDeToi(this);
 
