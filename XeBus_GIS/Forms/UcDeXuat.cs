@@ -271,7 +271,23 @@ namespace XeBus_GIS.Forms
                 case 4: btnTiep.Text = "Đề xuất ứng viên đã chọn"; break;
                 case 5: btnTiep.Text = "Phân tích vùng mới"; break;
             }
-            btnTiep.Enabled = true;
+            // mỗi bước là một chức năng riêng (Quy trình 3.1–3.5) – nút tiếp chỉ bật khi có quyền của bước sau
+            string thieu = buoc < 5 ? QuyenThieuChoBuoc(buoc + 1) : null;
+            btnTiep.Enabled = thieu == null;
+            UiHelper.TipCho(btnTiep, thieu == null ? "" : "Tài khoản không có quyền \"" + thieu + "\".");
+        }
+
+        /// <summary>Quyền cần để vào bước b (2: thiếu trạm, 3: ứng viên, 4: so sánh, 5: đề xuất); null nếu đủ quyền.</summary>
+        private static string QuyenThieuChoBuoc(int b)
+        {
+            switch (b)
+            {
+                case 2: return Session.Co(Quyen.DxThieuTram) ? null : "Xác định khu vực thiếu trạm";
+                case 3: return Session.Co(Quyen.DxUngVien) ? null : "Xác định vị trí ứng viên trạm";
+                case 4: return Session.Co(Quyen.DxSoSanh) ? null : "So sánh mức độ tối ưu các ứng viên";
+                case 5: return Session.Co(Quyen.DxDeXuat) ? null : "Đề xuất vị trí trạm xe tối ưu";
+                default: return null;
+            }
         }
 
         // =====================================================================
@@ -285,7 +301,7 @@ namespace XeBus_GIS.Forms
             {
                 int b = i + 1;
                 // chỉ đi tới bước đã tới trước đó và còn dữ liệu
-                if (b <= _buocXaNhat && (b == 1 || (b == 2 && _thieu != null) || (b == 3 && _soSanh != null) ||
+                if (b <= _buocXaNhat && QuyenThieuChoBuoc(b) == null && (b == 1 || (b == 2 && _thieu != null) || (b == 3 && _soSanh != null) ||
                     (b == 4 && _soSanh != null) || (b == 5 && _chon != null)))
                 {
                     if (b == 4) HienSoSanh();
@@ -420,6 +436,8 @@ namespace XeBus_GIS.Forms
         // =====================================================================
         private async Task TiepAsync()
         {
+            var thieu = _buoc < 5 ? QuyenThieuChoBuoc(_buoc + 1) : null;
+            if (thieu != null) { UiHelper.CanhBao(FindForm(), "Tài khoản không có quyền \"" + thieu + "\"."); return; }
             switch (_buoc)
             {
                 case 1: await PhanTichThieuTramAsync(); break;
