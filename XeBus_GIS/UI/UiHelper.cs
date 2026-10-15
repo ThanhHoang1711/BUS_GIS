@@ -74,8 +74,9 @@ namespace XeBus_GIS.UI
             b.Font = Theme.FontDam;
             b.FlatAppearance.MouseOverBackColor = nenHover;
             b.FlatAppearance.MouseDownBackColor = nenNhan;
-            GanTrangThai(b, KieuNut.Chinh, nen, Color.White, nen, 0);
-            ThemeManager.DangKy(b, "nut", () => NutChinh(b, nen, nenHover, nenNhan));
+            // chữ trắng trên nền tối, chữ than chì trên nền sáng
+            var chu = nen.GetBrightness() > 0.6f ? ColorTranslator.FromHtml("#111827") : Color.White;
+            GanTrangThai(b, KieuNut.Chinh, nen, chu, nen, 0);
         }
 
         /// <summary>
@@ -363,6 +364,24 @@ namespace XeBus_GIS.UI
                 if (c is TextBox t) t.BorderStyle = BorderStyle.FixedSingle;
                 MauO(c);
                 ThemeManager.DangKy(c, "o", () => MauO(c));
+            }
+        }
+
+        /// <summary>
+        /// Áp kiểu ô nhập cho mọi TextBox / ComboBox / NumericUpDown trong cây control chưa được chuẩn hoá
+        /// (bỏ qua ô không viền – vd ô nằm trong khung tự vẽ KhungO hoặc ô tìm nhanh).
+        /// </summary>
+        public static void ChuanHoaO(Control goc)
+        {
+            foreach (Control c in goc.Controls)
+            {
+                if ((c is TextBox t && t.BorderStyle != BorderStyle.None) || c is ComboBox || c is NumericUpDown)
+                {
+                    var f = c.Font;
+                    O(c);
+                    if (f.Size != c.Font.Size) c.Font = f;   // giữ cỡ chữ thiết kế sẵn (vd ô to hơn)
+                }
+                else if (!(c is DataGridView)) ChuanHoaO(c);
             }
         }
 

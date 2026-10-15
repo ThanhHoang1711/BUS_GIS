@@ -50,6 +50,8 @@ namespace XeBus_GIS.Forms
         private void ApDungGiaoDien()
         {
             BackColor = Theme.Surface;
+            UiHelper.ChuanHoaO(this);
+            ThemeManager.TieuDeToi(this);
             lblTieuDe.Font = Theme.FontTieuDe;
             lblTieuDe.ForeColor = Theme.Primary;
             foreach (var l in new[] { lblMa, lblTrangThai, lblTen, lblLoai, lblTuyen, lblPhuongTien, lblViDo, lblKinhDo })

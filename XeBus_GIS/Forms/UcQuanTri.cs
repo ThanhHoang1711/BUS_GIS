@@ -67,10 +67,24 @@ namespace XeBus_GIS.Forms
             tab.Appearance = TabAppearance.FlatButtons;
             tab.ItemSize = new System.Drawing.Size(0, 1);
             tab.SizeMode = TabSizeMode.Fixed;
-            // khung viền của TabControl do Windows vẽ (luôn sáng màu) – chỉ cho hiện vùng trang bên trong
-            void CatKhung() { var dr = tab.DisplayRectangle; tab.Region = new System.Drawing.Region(dr); }
-            tab.Resize += (s, e) => CatKhung();
-            tab.HandleCreated += (s, e) => CatKhung();
+            // khung viền của TabControl do Windows vẽ (luôn sáng màu): đặt TabControl trong một panel và đẩy viền ra ngoài
+            // mép panel (panel cắt đi) – trang bên trong vẫn lấp đầy vùng hiển thị
+            var boc = new Panel { Dock = DockStyle.Fill, BackColor = Theme.Surface };
+            var cha = tab.Parent;
+            int chiSo = cha.Controls.GetChildIndex(tab);
+            cha.Controls.Add(boc);
+            cha.Controls.SetChildIndex(boc, chiSo);
+            tab.Dock = DockStyle.None;
+            tab.Parent = boc;
+            void DatViTri()
+            {
+                var dr = tab.DisplayRectangle;
+                int thuaNgang = tab.Width - dr.Width, thuaDoc = tab.Height - dr.Height;
+                tab.SetBounds(-dr.X, -dr.Y, boc.ClientSize.Width + thuaNgang, boc.ClientSize.Height + thuaDoc);
+            }
+            boc.Resize += (s, e) => DatViTri();
+            tab.HandleCreated += (s, e) => DatViTri();
+            DatViTri();
             var pnl = new FlowLayoutPanel
             {
                 Dock = DockStyle.Top,
@@ -100,7 +114,7 @@ namespace XeBus_GIS.Forms
             if (nut.Count > 0) UiHelper.ChonTab(nut[0], true);
             Controls.Add(pnl);
             pnl.BringToFront();
-            tab.BringToFront();   // tab (Fill) phải nằm trên cùng z-order để dock sau thanh tab
+            (tab.Parent ?? tab).BringToFront();   // khối Fill (panel bọc tab) phải nằm trên cùng z-order để dock sau thanh tab
         }
 
         // =====================================================================
@@ -109,6 +123,7 @@ namespace XeBus_GIS.Forms
         private void ApDungGiaoDien()
         {
             BackColor = Theme.Surface;
+            UiHelper.ChuanHoaO(this);
             lblTieuDe.Visible = false;   // tiêu đề trang hiển thị ở đầu cửa sổ chính
             tab.Font = Theme.FontThuong;
             foreach (TabPage tp in tab.TabPages) { tp.BackColor = Theme.Surface; tp.Font = Theme.FontThuong; tp.Padding = new Padding(UiHelper.Dp(8)); }

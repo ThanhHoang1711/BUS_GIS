@@ -14,6 +14,7 @@ namespace XeBus_GIS.Forms
         {
             InitializeComponent();
             ApDungGiaoDien();
+            ThemeManager.TieuDeToi(this);
 
             btnDangNhap.Click += async (s, e) => await DangNhapAsync();
             lnkKhach.LinkClicked += async (s, e) => await VaoVoiTuCachKhachAsync();

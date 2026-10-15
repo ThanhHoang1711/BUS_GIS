@@ -63,9 +63,10 @@ namespace XeBus_GIS.UI
         public static readonly Color Highlight = ColorTranslator.FromHtml("#F97316");
 
         // ---- Trang đăng nhập / đăng ký: tông than chì trung tính (người dùng chọn bỏ xanh ngọc ở trang này) ----
-        public static readonly Color DnNhan = ColorTranslator.FromHtml("#111827");        // nút chính, logo, liên kết
-        public static readonly Color DnNhanHover = ColorTranslator.FromHtml("#1F2937");
-        public static readonly Color DnNhanNhan = ColorTranslator.FromHtml("#030712");
+        // nút chính / liên kết ở cột form: chế độ sáng than chì, chế độ tối đảo thành xám rất nhạt (chữ tối)
+        public static Color DnNhan { get; private set; }
+        public static Color DnNhanHover { get; private set; }
+        public static Color DnNhanNhan { get; private set; }
         public static readonly Color DnPhu = Color.FromArgb(17, 24, 39);                  // lớp phủ trên video nền
 
         // ---- Màu ký hiệu bản đồ (mang nghĩa nghiệp vụ – giữ ổn định ở cả hai chế độ) ----
@@ -168,7 +169,7 @@ namespace XeBus_GIS.UI
             ["Primary"] = "#0F172A", ["Secondary"] = "#334155",
             ["Accent"] = "#0F766E", ["AccentHover"] = "#115E59", ["AccentPressed"] = "#134E4A", ["ChuTrenAccent"] = "#FFFFFF",
             ["AccentSoft"] = "#E6F4F1", ["AccentSoftHover"] = "#D1EBE6", ["Accent2"] = "#0EA5E9",
-            ["Success"] = "#16A34A", ["Warning"] = "#F59E0B", ["WarningText"] = "#B45309",
+            ["Success"] = "#15803D", ["Warning"] = "#F59E0B", ["WarningText"] = "#B45309",
             ["Danger"] = "#DC2626", ["DangerHover"] = "#B91C1C", ["DangerSoft"] = "#FEF2F2", ["DangerSoftPressed"] = "#FEE2E2", ["DangerBorder"] = "#FECACA",
             ["Background"] = "#F4F7FB", ["Surface"] = "#FFFFFF", ["SurfaceAlt"] = "#F8FAFB", ["SurfaceHover"] = "#F1F4F7",
             ["Border"] = "#E2E7EC", ["BorderStrong"] = "#CAD2DA",
@@ -176,6 +177,7 @@ namespace XeBus_GIS.UI
             ["RowAlt"] = "#FAFBFC", ["RowSelect"] = "#E6F4F1", ["RowHover"] = "#F3F6F9", ["HeaderHover"] = "#F1F4F7",
             ["Sidebar"] = "#EEF2F5", ["SidebarHover"] = "#E2E8ED", ["SidebarChon"] = "#DCEFEA",
             ["MapDuong"] = "#94A3B8", ["MapPhuongXa"] = "#64748B", ["MapRanhGioi"] = "#172033",
+            ["DnNhan"] = "#111827", ["DnNhanHover"] = "#1F2937", ["DnNhanNhan"] = "#030712",
         };
 
         private static readonly Dictionary<string, string> BangToi = new Dictionary<string, string>
@@ -191,6 +193,7 @@ namespace XeBus_GIS.UI
             ["RowAlt"] = "#232B3A", ["RowSelect"] = "#17393A", ["RowHover"] = "#28324A", ["HeaderHover"] = "#2A3446",
             ["Sidebar"] = "#1B2130", ["SidebarHover"] = "#262F40", ["SidebarChon"] = "#17393A",
             ["MapDuong"] = "#64748B", ["MapPhuongXa"] = "#94A3B8", ["MapRanhGioi"] = "#E2E8F0",
+            ["DnNhan"] = "#E5E7EB", ["DnNhanHover"] = "#F3F4F6", ["DnNhanNhan"] = "#D1D5DB",
         };
 
         static Theme() { ApDung(false); }
