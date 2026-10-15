@@ -807,7 +807,7 @@ namespace XeBus_GIS.Forms
                 HienBangDuoi = HienKhungDuoi,
                 AnBangDuoi = AnKhungDuoi,
             };
-            _tools.Dat(CongCu.ChonDoiTuong);
+            _tools.Dat(MapTools.MacDinh);
 
             // màn hình laptop: thu gọn menu để dành chỗ cho bản đồ (người dùng mở lại bằng nút / Ctrl+B)
             if (Screen.FromControl(this).WorkingArea.Width < UiHelper.Dp(1600)) navBar.ThuGon = true;
@@ -991,7 +991,7 @@ namespace XeBus_GIS.Forms
                     if (lstTimNhanh.Visible) { AnGoiY(); return true; }
                     if (_tools != null && pnlMap.Visible && _tools.HienTai != CongCu.ChonDoiTuong && _tools.HienTai != CongCu.Keo)
                     {
-                        _tools.Dat(CongCu.ChonDoiTuong);
+                        _tools.Dat(MapTools.MacDinh);
                         TrangThai("Đã huỷ thao tác trên bản đồ.", false);
                         return true;
                     }

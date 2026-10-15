@@ -166,7 +166,7 @@ namespace XeBus_GIS.Forms
             if (_dangCho != DangCho.KhongCo)
             {
                 _dangCho = DangCho.KhongCo;
-                _bc.CongCu.Dat(CongCu.ChonDoiTuong);
+                _bc.CongCu.Dat(MapTools.MacDinh);
             }
             if (_formGan != null && !_formGan.IsDisposed) _formGan.Close();
             _bc.BanDo.XoaLopTam(LopTramTuyen);
@@ -410,6 +410,7 @@ namespace XeBus_GIS.Forms
             _formGan.FormClosed += async (s, e) =>
             {
                 _formGan = null;
+                if (_bc.CongCu.HienTai == CongCu.ChonDoiTuong) _bc.CongCu.Dat(MapTools.MacDinh);
                 if (_tuyenDangXem != null && Visible) await XemTuyenAsync(_tuyenDangXem, zoom: false);
             };
             var main = FindForm();

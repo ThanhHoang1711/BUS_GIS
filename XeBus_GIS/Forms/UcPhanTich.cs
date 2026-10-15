@@ -170,7 +170,7 @@ namespace XeBus_GIS.Forms
             if (_dangChoVe)
             {
                 _dangChoVe = false;
-                _bc.CongCu.Dat(CongCu.ChonDoiTuong);
+                _bc.CongCu.Dat(MapTools.MacDinh);
             }
             foreach (var l in new[] { LopVung, LopThieu, LopPhucVu }) _bc.BanDo.XoaLopTam(l);
         }

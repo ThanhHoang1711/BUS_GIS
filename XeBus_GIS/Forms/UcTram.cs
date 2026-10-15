@@ -203,7 +203,7 @@ namespace XeBus_GIS.Forms
             if (_dangCho != DangCho.KhongCo)
             {
                 _dangCho = DangCho.KhongCo;
-                _bc.CongCu.Dat(CongCu.ChonDoiTuong);
+                _bc.CongCu.Dat(MapTools.MacDinh);
             }
             _bc.BanDo.XoaLopTam(LopTraCuu);
         }

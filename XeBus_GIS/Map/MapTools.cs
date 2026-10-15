@@ -31,7 +31,10 @@ namespace XeBus_GIS.Map
         private readonly List<double[]> _dinh = new List<double[]>();
         private int _hVe = -1;
 
-        public CongCu HienTai { get; private set; } = CongCu.Keo;
+        /// <summary>Công cụ mặc định khi mở bản đồ và sau khi xong/huỷ vẽ, chọn điểm, đo: kéo bản đồ (người dùng yêu cầu 2026-10-15).</summary>
+        public const CongCu MacDinh = CongCu.Keo;
+
+        public CongCu HienTai { get; private set; } = MacDinh;
 
         /// <summary>Click chọn đối tượng: (x, y, dung sai mét) theo EPSG:3857.</summary>
         public event Action<double, double, double> ClickChonDoiTuong;
@@ -104,7 +107,7 @@ namespace XeBus_GIS.Map
                 case CongCu.ChonDiem:
                     if (trai)
                     {
-                        Dat(CongCu.ChonDoiTuong);
+                        Dat(MacDinh);
                         ChonDiemXong?.Invoke(x, y);
                     }
                     break;
@@ -167,7 +170,7 @@ namespace XeBus_GIS.Map
             sb.Append(dinh[0][0].ToString("R", inv)).Append(' ').Append(dinh[0][1].ToString("R", inv)).Append("))");
 
             var wkt = sb.ToString();
-            Dat(CongCu.ChonDoiTuong);
+            Dat(MacDinh);
             VeVungXong?.Invoke(wkt);
         }
 
