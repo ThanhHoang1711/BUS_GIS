@@ -48,6 +48,7 @@
         public const string MuiTenXuong = "";
         public const string Loc = "";           // Filter
         public const string PanelPhai = "";     // OpenPane
+        public const string AnMat = "\uED1A";         // Hide – đang hiện mật khẩu
         public const string MoThanhBen = "";    // OpenPane – mở rộng thanh bên
         public const string DongThanhBen = "";  // ClosePane – thu gọn thanh bên
     }

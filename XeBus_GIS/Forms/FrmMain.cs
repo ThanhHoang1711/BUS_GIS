@@ -89,6 +89,53 @@ namespace XeBus_GIS.Forms
             _axMap.Name = "axMap";
             pnlMap.Controls.Add(_axMap);
             ((ISupportInitialize)_axMap).EndInit();
+            TaoKhungDuoi();
+        }
+
+        // =====================================================================
+        // Khung ngang dưới bản đồ (bảng kết quả của module – vd tra cứu trạm)
+        // =====================================================================
+        private Panel _pnlDuoi;
+        private Splitter _splDuoi;
+
+        private void TaoKhungDuoi()
+        {
+            _pnlDuoi = new Panel { Dock = DockStyle.Bottom, Height = UiHelper.Dp(270), BackColor = Theme.Surface, Visible = false };
+            _splDuoi = new Splitter { Dock = DockStyle.Bottom, Height = UiHelper.Dp(5), BackColor = Theme.Background, MinSize = UiHelper.Dp(120), MinExtra = UiHelper.Dp(200), Visible = false };
+            _pnlDuoi.Paint += (s, e) =>
+            {
+                using (var pen = new Pen(Theme.Border)) e.Graphics.DrawLine(pen, 0, 0, _pnlDuoi.Width, 0);
+            };
+            // Khung dưới trải từ mép cột module tới mép phải cửa sổ (dưới cả bản đồ và panel phải) cho bảng đủ rộng.
+            // Thứ tự dock (chỉ số lớn dock trước): module trái → khung dưới → panel phải → bản đồ lấp phần còn lại.
+            pnlLamViec.Controls.Add(_pnlDuoi);
+            pnlLamViec.Controls.Add(_splDuoi);
+            var thuTu = new Control[] { pnlTrang, pnlMap, splPhai, pnlPhai, _splDuoi, _pnlDuoi, splTrai, pnlTrai };
+            for (int i = 0; i < thuTu.Length; i++) pnlLamViec.Controls.SetChildIndex(thuTu[i], i);
+        }
+
+        private void HienKhungDuoi(Control noiDung)
+        {
+            if (noiDung == null) return;
+            if (noiDung.Parent != _pnlDuoi)
+            {
+                _pnlDuoi.Controls.Clear();
+                noiDung.Dock = DockStyle.Fill;
+                _pnlDuoi.Controls.Add(noiDung);
+            }
+            noiDung.Visible = true;
+            if (!_pnlDuoi.Visible)
+            {
+                _pnlDuoi.Visible = true;
+                _splDuoi.Visible = true;
+            }
+        }
+
+        private void AnKhungDuoi(Control noiDung)
+        {
+            if (noiDung == null || noiDung.Parent != _pnlDuoi) return;
+            _pnlDuoi.Visible = false;
+            _splDuoi.Visible = false;
         }
 
         private void ApDungGiaoDien()
@@ -184,6 +231,7 @@ namespace XeBus_GIS.Forms
             UiHelper.NutIcon(btnThuPhai, Icons.Phai, "Ẩn panel", 9f);
             pnlTabThongTin.BackColor = Theme.Surface;
             pnlTabLop.BackColor = Theme.Surface;
+            TaoChonNen();
             UiHelper.TieuDeKhuVuc(lblThongTin);
             UiHelper.Luoi(dgvThongTin);
             dgvThongTin.ColumnHeadersVisible = false;
@@ -267,19 +315,18 @@ namespace XeBus_GIS.Forms
         private void TaoDanhSachLop()
         {
             const string gt = "Giao thông", dc = "Dân cư & công trình", rg = "Ranh giới hành chính";
-            panelLop.Them(MapManager.Tram, "Trạm xe buýt", gt, new ChuGiai("", Theme.MapTram, KieuKyHieu.Tron),
-                new ChuGiai("Trạm dừng", Theme.MapTram, KieuKyHieu.Tron),
-                new ChuGiai("Bến xe / điểm trung chuyển", Theme.MapBenXe, KieuKyHieu.Vuong),
-                new ChuGiai("Trạm đề xuất", Theme.MapTramDeXuat, KieuKyHieu.Tron),
-                new ChuGiai("Ngừng hoạt động", Theme.MapTramNgung, KieuKyHieu.Tron));
+            panelLop.Them(MapManager.Tram, "Trạm xe buýt", gt, new ChuGiai("", Theme.MapTram, KieuKyHieu.XeBus),
+                new ChuGiai("Trạm dừng", Theme.MapTram, KieuKyHieu.XeBus),
+                new ChuGiai("Bến xe / điểm trung chuyển", Theme.MapBenXe, KieuKyHieu.XeBus),
+                new ChuGiai("Trạm đề xuất", Theme.MapTramDeXuat, KieuKyHieu.XeBus),
+                new ChuGiai("Ngừng hoạt động", Theme.MapTramNgung, KieuKyHieu.XeBus),
+                new ChuGiai("Thu nhỏ hơn 1:120.000: trạm hiện dạng chấm", Theme.MapTram, KieuKyHieu.Tron));
             panelLop.Them(MapManager.Tuyen, "Tuyến xe buýt", gt, new ChuGiai("", Theme.MauTuyen[0], KieuKyHieu.Duong));
             panelLop.Them(MapManager.DoanDuong, "Đoạn đường", gt, new ChuGiai("", Theme.MapDuong, KieuKyHieu.Duong));
-            panelLop.Them(MapManager.CongTrinh, "Công trình", dc, new ChuGiai("", Theme.MapCongTrinh, KieuKyHieu.Thoi),
-                new ChuGiai("Y tế", Theme.MapCtYTe, KieuKyHieu.ChuThap),
-                new ChuGiai("Giáo dục", Theme.MapCtGiaoDuc, KieuKyHieu.TamGiac),
-                new ChuGiai("Thương mại, chợ", Theme.MapCtThuongMai, KieuKyHieu.Thoi),
-                new ChuGiai("Khu công nghiệp", Theme.MapCtCongNghiep, KieuKyHieu.Vuong),
-                new ChuGiai("Công trình khác", Theme.MapCongTrinh, KieuKyHieu.Thoi));
+            panelLop.Them(MapManager.CongTrinh, "Công trình", dc, new ChuGiai("", Theme.MapCtGiaoDuc, "\uE7BE"),
+                KyHieuCongTrinh.ChuGiai.Select(c => new ChuGiai(c.ten, c.mau, c.glyph))
+                    .Concat(new[] { new ChuGiai("Thu nhỏ hơn 1:60.000: công trình hiện dạng chấm", Theme.MapCongTrinh, KieuKyHieu.Tron) })
+                    .ToArray());
             panelLop.Them(MapManager.KhuDanCu, "Khu dân cư", dc, new ChuGiai("", Theme.MapKhuDanCu, KieuKyHieu.Vung));
             panelLop.Them(MapManager.PhuongXa, "Phường/xã", rg, new ChuGiai("", Theme.MapPhuongXa, KieuKyHieu.DuongCham));
             panelLop.Them(MapManager.RanhGioi, "Ranh giới Hà Nội", rg, new ChuGiai("", Theme.MapRanhGioi, KieuKyHieu.DuongDut));
@@ -367,6 +414,51 @@ namespace XeBus_GIS.Forms
             };
         }
 
+        // =====================================================================
+        // Chọn bản đồ nền (đầu tab "Lớp & chú giải"; lựa chọn lưu ở %LOCALAPPDATA%\XeBus_GIS\nen.txt)
+        // =====================================================================
+        private NhomChip _chipNen;
+
+        private static string TepNen => System.IO.Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "XeBus_GIS", "nen.txt");
+
+        /// <summary>Nền người dùng đã chọn lần trước; chưa chọn thì theo App.config (NenBanDo), rồi mặc định Esri xám.</summary>
+        private static string NenDaLuu()
+        {
+            try { if (System.IO.File.Exists(TepNen)) return System.IO.File.ReadAllText(TepNen).Trim(); } catch { }
+            return System.Configuration.ConfigurationManager.AppSettings["NenBanDo"];
+        }
+
+        private void TaoChonNen()
+        {
+            var khung = new Panel { Dock = DockStyle.Top, BackColor = Theme.Surface, Padding = new Padding(0, 0, 0, UiHelper.Dp(8)) };
+            var tieuDe = new Label { Text = "Bản đồ nền", Dock = DockStyle.Top, Height = UiHelper.Dp(24), UseMnemonic = false };
+            UiHelper.TieuDeKhuVuc(tieuDe);
+            _chipNen = new NhomChip { Dock = DockStyle.Top };
+            _chipNen.Dat(MapManager.CacNen.Select(n => n.ten).ToArray());
+            khung.Controls.Add(_chipNen);
+            khung.Controls.Add(tieuDe);
+            _chipNen.Resize += (s, e) => khung.Height = tieuDe.Height + _chipNen.Height + UiHelper.Dp(10);
+            khung.Height = tieuDe.Height + _chipNen.Height + UiHelper.Dp(10);
+            khung.Paint += (s, e) => { using (var pen = new Pen(Theme.Border)) e.Graphics.DrawLine(pen, 0, khung.Height - 1, khung.Width, khung.Height - 1); };
+            pnlTabLop.Controls.Add(khung);
+            khung.BringToFront();
+            panelLop.BringToFront();   // panelLop (Fill) dock sau cùng
+            _chipNen.ChonDoi += i =>
+            {
+                if (_mm == null) return;
+                var khoa = MapManager.CacNen[i].khoa;
+                _mm.DatNenBanDo(khoa);
+                slHeToaDo.Text = "WGS 84 · EPSG:4326" + (_mm.BanQuyenNen.Length > 0 ? " · " + _mm.BanQuyenNen : "");
+                try
+                {
+                    System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(TepNen));
+                    System.IO.File.WriteAllText(TepNen, khoa);
+                }
+                catch { /* chỉ là ghi nhớ lựa chọn */ }
+            };
+        }
+
         private async Task KhoiDongAsync()
         {
             PhanQuyenMenu();
@@ -375,14 +467,22 @@ namespace XeBus_GIS.Forms
 
             // bản đồ phải đang hiển thị khi khởi tạo ActiveX
             _mm = new MapManager(_axMap);
-            _mm.KhoiTao();
+            _mm.KhoiTao(NenDaLuu());
+            if (_mm.BanQuyenNen.Length > 0) slHeToaDo.Text = "WGS 84 · EPSG:4326 · " + _mm.BanQuyenNen;
+            int iNen = Array.FindIndex(MapManager.CacNen, n => n.khoa.Equals(_mm.NenHienTai, StringComparison.OrdinalIgnoreCase));
+            if (iNen >= 0 && _chipNen != null) _chipNen.Chon = iNen;
             _mm.HienThiThayDoi += (khoa, hien) => panelLop.DatHien(khoa, hien);
             _tools = new MapTools(_mm);
             _tools.ToaDoThayDoi += (lon, lat) => slToaDo.Text = $"Kinh độ {lon:0.00000}   Vĩ độ {lat:0.00000}";
             _tools.CongCuThayDoi += CapNhatNutCongCu;
             _tools.ClickChonDoiTuong += async (x, y, tol) => await ChonTaiDiemAsync(x, y, tol);
             _axMap.ExtentsChanged += (s, e) => slTyLe.Text = "Tỷ lệ 1:" + _axMap.CurrentScale.ToString("N0");
-            _boiCanh = new BoiCanh(_mm, _tools, HienThongTin, TrangThai) { MoModule = ChonModule };
+            _boiCanh = new BoiCanh(_mm, _tools, HienThongTin, TrangThai)
+            {
+                MoModule = ChonModule,
+                HienBangDuoi = HienKhungDuoi,
+                AnBangDuoi = AnKhungDuoi,
+            };
             _tools.Dat(CongCu.ChonDoiTuong);
 
             // màn hình laptop: thu gọn menu để dành chỗ cho bản đồ (người dùng mở lại bằng nút / Ctrl+B)
@@ -738,14 +838,15 @@ namespace XeBus_GIS.Forms
         {
             try
             {
-                bool coCt = _mm.LopDangHien(MapManager.CongTrinh), coKdc = _mm.LopDangHien(MapManager.KhuDanCu);
-                var r = await Task.Run(() => BanDoRepository.TimTaiDiem(x, y, tol, coCt, coKdc));
+                bool coTram = _mm.LopDangHien(MapManager.Tram), coCt = _mm.LopDangHien(MapManager.CongTrinh);
+                bool coTuyen = _moduleHienTai == "TUYEN" && _mm.LopDangHien(MapManager.Tuyen);
+                var r = await Task.Run(() => BanDoRepository.TimTaiDiem(x, y, tol, coTram, coCt, coTuyen));
                 _mm.BoChonTatCa();
                 if (r == null)
                 {
                     dgvThongTin.DataSource = null;
                     lblThongTin.Text = "Thông tin đối tượng";
-                    TrangThai("Không có đối tượng tại vị trí click.", false);
+                    TrangThai(coCt ? "Không có trạm hoặc công trình tại vị trí click." : "Không có trạm tại vị trí click – click lên biểu tượng trạm để xem thông tin.", false);
                     return;
                 }
                 string loai = Convert.ToString(r["loai"]), ma = Convert.ToString(r["ma"]);

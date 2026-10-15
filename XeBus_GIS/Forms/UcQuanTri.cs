@@ -41,12 +41,25 @@ namespace XeBus_GIS.Forms
         // =====================================================================
         public async void KichHoat()
         {
+            await NhacChoDuyetAsync();
             if (_daNap) return;
             _daNap = true;
             await NapBanDauAsync();
         }
 
         public void NgungKichHoat() { }
+
+        /// <summary>Nhắc quản trị viên khi có tài khoản tự đăng ký đang chờ duyệt.</summary>
+        private async Task NhacChoDuyetAsync()
+        {
+            try
+            {
+                int so = await Task.Run(() => QuanTriRepository.SoChoDuyet());
+                if (so > 0)
+                    UiHelper.CanhBao(this, $"Có {so} tài khoản tự đăng ký đang chờ duyệt. Chọn tài khoản, sửa trạng thái thành \"Hoạt động\" (và nhóm nếu cần).");
+            }
+            catch { /* chỉ là nhắc nhở */ }
+        }
 
         /// <summary>Thay dải tab hệ thống bằng các tab gạch chân thống nhất với các màn hình khác.</summary>
         private void TaoThanhTab()

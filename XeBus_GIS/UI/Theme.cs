@@ -42,6 +42,12 @@ namespace XeBus_GIS.UI
         public static readonly Color SidebarChon = ColorTranslator.FromHtml("#DCEFEA");      // mục đang chọn
         public static readonly Color SurfaceHover = ColorTranslator.FromHtml("#F1F4F7");
 
+        // ---- Trang đăng nhập / đăng ký: tông than chì trung tính (người dùng chọn bỏ xanh ngọc ở trang này) ----
+        public static readonly Color DnNhan = ColorTranslator.FromHtml("#111827");        // nút chính, logo, liên kết
+        public static readonly Color DnNhanHover = ColorTranslator.FromHtml("#1F2937");
+        public static readonly Color DnNhanNhan = ColorTranslator.FromHtml("#030712");
+        public static readonly Color DnPhu = Color.FromArgb(17, 24, 39);                  // lớp phủ trên video nền
+
         // ---- Màu ký hiệu bản đồ (mang nghĩa nghiệp vụ – giữ ổn định) ----
         public static readonly Color MapTram = Accent;
         public static readonly Color MapDuong = ColorTranslator.FromHtml("#94A3B8");
@@ -51,6 +57,8 @@ namespace XeBus_GIS.UI
         public static readonly Color MapCtGiaoDuc = ColorTranslator.FromHtml("#16A34A");     // trường học, đại học
         public static readonly Color MapCtThuongMai = ColorTranslator.FromHtml("#D97706");   // TTTM, siêu thị, chợ
         public static readonly Color MapCtCongNghiep = ColorTranslator.FromHtml("#78350F");  // khu công nghiệp
+        public static readonly Color MapCtHanhChinh = ColorTranslator.FromHtml("#334155");   // hành chính - công cộng
+        public static readonly Color MapCtCongVien = ColorTranslator.FromHtml("#4D7C0F");    // công viên, thể thao
         public static readonly Color MapPhuongXa = ColorTranslator.FromHtml("#64748B");
         public static readonly Color MapRanhGioi = ColorTranslator.FromHtml("#172033");
         public static readonly Color MapBenXe = ColorTranslator.FromHtml("#172033");
@@ -85,6 +93,28 @@ namespace XeBus_GIS.UI
             Danger, ColorTranslator.FromHtml("#F97316"), ColorTranslator.FromHtml("#FACC15"), Success,
         };
 
+        // ---- Công cụ "Chọn vị trí đặt trạm" (đa tiêu chí) ----
+        /// <summary>Màu 5 tiêu chí: dân cư · công trình · trạm hiện có · giao thông · tiếp cận an toàn.</summary>
+        public static readonly Color[] MauTieuChi =
+        {
+            ColorTranslator.FromHtml("#BE123C"), ColorTranslator.FromHtml("#D97706"), Accent2,
+            ColorTranslator.FromHtml("#4F46E5"), Accent,
+        };
+
+        /// <summary>Thang mức phù hợp 0 → 1 (kém đỏ → tốt xanh lá, 5 lớp).</summary>
+        public static readonly Color[] ThangMauPhuHop =
+        {
+            ColorTranslator.FromHtml("#D7191C"), ColorTranslator.FromHtml("#F48C47"), ColorTranslator.FromHtml("#E9C74A"),
+            ColorTranslator.FromHtml("#8CC65B"), ColorTranslator.FromHtml("#1A9641"),
+        };
+
+        /// <summary>Thang mật độ dân CHƯA có trạm phục vụ (nhạt → đậm, cùng tông màu tiêu chí dân cư).</summary>
+        public static readonly Color[] ThangMauDanCu =
+        {
+            ColorTranslator.FromHtml("#FFE4E6"), ColorTranslator.FromHtml("#FDA4AF"), ColorTranslator.FromHtml("#FB7185"),
+            ColorTranslator.FromHtml("#E11D48"), ColorTranslator.FromHtml("#881337"),
+        };
+
         /// <summary>Màu (nền, chữ) cho nhãn trạng thái trong lưới.</summary>
         public static void MauTrangThai(string trangThai, out Color nen, out Color chu)
         {
@@ -94,6 +124,8 @@ namespace XeBus_GIS.UI
                     nen = ColorTranslator.FromHtml("#DCFCE7"); chu = ColorTranslator.FromHtml("#15803D"); break;
                 case "Đề xuất":
                     nen = ColorTranslator.FromHtml("#FFEDD5"); chu = ColorTranslator.FromHtml("#C2410C"); break;
+                case "Chờ duyệt":
+                    nen = ColorTranslator.FromHtml("#FEF3C7"); chu = WarningText; break;
                 case "Tạm dừng":
                     nen = ColorTranslator.FromHtml("#FEF3C7"); chu = WarningText; break;
                 case "Ngừng hoạt động":

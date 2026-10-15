@@ -22,6 +22,8 @@
         public const string DxUngVien = "DX_UNGVIEN";
         public const string DxSoSanh = "DX_SOSANH";
         public const string DxDeXuat = "DX_DEXUAT";
+        /// <summary>Chọn vị trí đặt trạm theo đa tiêu chí (database/13_chon_vitri.sql) – chỉ nhóm Quản trị viên.</summary>
+        public const string DxChonViTri = "DX_CHONVITRI";
 
         // Thống kê
         public const string TkKhuVuc = "TK_KHUVUC";

@@ -54,6 +54,11 @@
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Windows.Forms.DataVisualization" />
     <Reference Include="System.Xml" />
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="WindowsBase" />
+    <Reference Include="WindowsFormsIntegration" />
+    <Reference Include="System.Xaml" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Npgsql">
@@ -100,16 +105,60 @@
     <Compile Include="Security\Session.cs" />
     <Compile Include="Map\MapManager.cs" />
     <Compile Include="Map\MapTools.cs" />
+    <Compile Include="Map\MayChuNenCucBo.cs" />
+    <Compile Include="Map\KyHieuTram.cs" />
+    <Compile Include="Map\KyHieuCongTrinh.cs" />
+    <Compile Include="Forms\UcChonViTri.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Forms\UcChonViTri.Designer.cs">
+      <DependentUpon>UcChonViTri.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\Controls\BieuDoRadar.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="UI\Controls\BangTieuChi.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="UI\Controls\ThanhThangMau.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="UI\Controls\NhomChip.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="UI\Controls\ThanhTrongSo.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Data\ChonViTriRepository.cs" />
     <Compile Include="UI\Theme.cs" />
     <Compile Include="UI\Icons.cs" />
     <Compile Include="UI\UiHelper.cs" />
-    <Compile Include="UI\Controls\Toast.cs" />
-    <Compile Include="UI\Controls\HopThoai.cs" />
+    <Compile Include="UI\Controls\Toast.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\Controls\HopThoai.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="UI\Controls\ThanhDieuHuong.cs" />
+    <Compile Include="UI\Controls\NenVideo.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="UI\Controls\PanelLopBanDo.cs" />
-    <Compile Include="UI\Controls\KhungChuGiai.cs" />
-    <Compile Include="UI\Controls\TheKpi.cs" />
-    <Compile Include="UI\Controls\ThanhBuoc.cs" />
+    <Compile Include="UI\Controls\KhungChuGiai.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="UI\Controls\TheKpi.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="UI\Controls\ThanhBuoc.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Forms\UcDangKy.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Forms\UcDangKy.Designer.cs">
+      <DependentUpon>UcDangKy.cs</DependentUpon>
+    </Compile>
     <Compile Include="Forms\FrmDangNhap.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -211,6 +260,12 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+    <Content Include="Assets\nen_dangnhap.mp4">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\nen_dangnhap.jpg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <None Include="app.manifest" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

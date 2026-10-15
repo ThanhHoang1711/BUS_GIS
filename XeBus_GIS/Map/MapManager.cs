@@ -56,12 +56,10 @@ namespace XeBus_GIS.Map
         // =====================================================================
         // Khởi tạo
         // =====================================================================
-        public void KhoiTao()
+        public void KhoiTao(string nen = null)
         {
             Map.Projection = tkMapProjection.PROJECTION_GOOGLE_MERCATOR;
-            var nen = ConfigurationManager.AppSettings["NenBanDo"] ?? "OpenStreetMap";
-            Map.TileProvider = nen.Equals("None", StringComparison.OrdinalIgnoreCase)
-                ? tkTileProvider.ProviderNone : tkTileProvider.OpenStreetMap;
+            DatNenBanDo(nen ?? ConfigurationManager.AppSettings["NenBanDo"]);
             Map.ShowVersionNumber = false;
             Map.ShowRedrawTime = false;
             Map.ScalebarVisible = true;
@@ -71,6 +69,12 @@ namespace XeBus_GIS.Map
             Map.SendMouseMove = true;
             Map.CursorMode = tkCursorMode.cmPan;
             Map.BackColor = Theme.Background;
+            // ký hiệu trạm hình xe buýt đổi cỡ theo tỷ lệ
+            Map.ExtentsChanged += (s, e) =>
+            {
+                bool doi = CapNhatKyHieuTram(false) | CapNhatKyHieuCongTrinh(false);
+                if (doi) Map.Redraw();
+            };
             ToanCanh();
 
             DangKy(RanhGioi, "Ranh giới Hà Nội", ShpfileType.SHP_POLYGON, BanDoRepository.SqlRanhGioi, sf =>
@@ -99,11 +103,17 @@ namespace XeBus_GIS.Map
             });
             DangKy(CongTrinh, "Công trình", ShpfileType.SHP_POINT, BanDoRepository.SqlCongTrinh, sf =>
             {
-                KieuDiem(sf.DefaultDrawingOptions, Theme.MapCongTrinh, 6, tkDefaultPointSymbol.dpsDiamond);
-                ThemLoaiDiem(sf, "Y tế", "YT", Theme.MapCtYTe, 8, tkDefaultPointSymbol.dpsCross);
-                ThemLoaiDiem(sf, "Giáo dục", "GD", Theme.MapCtGiaoDuc, 7, tkDefaultPointSymbol.dpsTriangleUp);
-                ThemLoaiDiem(sf, "Thương mại - chợ", "TM", Theme.MapCtThuongMai, 6, tkDefaultPointSymbol.dpsDiamond);
-                ThemLoaiDiem(sf, "Khu công nghiệp", "CN", Theme.MapCtCongNghiep, 9, tkDefaultPointSymbol.dpsSquare);
+                // mỗi loại công trình một ký hiệu (hình tròn màu nhóm + icon riêng), cỡ đổi theo tỷ lệ – xem CapNhatKyHieuCongTrinh
+                KieuDiem(sf.DefaultDrawingOptions, Theme.MapCongTrinh, 6, tkDefaultPointSymbol.dpsCircle);
+                _kyHieuCt.Clear();
+                _kyHieuCt.Add((sf.DefaultDrawingOptions, Theme.MapCongTrinh, "\uE734"));
+                foreach (var lct in KyHieuCongTrinh.CacLoai)
+                {
+                    ThemLoaiDiem(sf, lct.Ten, lct.Ma, lct.Mau, 6, tkDefaultPointSymbol.dpsCircle);
+                    _kyHieuCt.Add((sf.Categories.get_Item(sf.Categories.Count - 1).DrawingOptions, lct.Mau, lct.Glyph));
+                }
+                _coKyHieuCt = -1;
+                CapNhatKyHieuCongTrinh(true);
             });
             DangKy(DoanDuong, "Đoạn đường", ShpfileType.SHP_POLYLINE, BanDoRepository.SqlDoanDuong, sf =>
             {
@@ -129,7 +139,126 @@ namespace XeBus_GIS.Map
                 ThemLoaiDiem(sf, "Bến xe", "BX", Theme.MapBenXe, 11, tkDefaultPointSymbol.dpsSquare);
                 ThemLoaiDiem(sf, "Đề xuất", "DX", Theme.MapTramDeXuat, 10, tkDefaultPointSymbol.dpsCircle);
                 ThemLoaiDiem(sf, "Ngừng hoạt động", "NG", Theme.MapTramNgung, 7, tkDefaultPointSymbol.dpsCircle);
+                _kyHieuTram.Clear();
+                _kyHieuTram.Add((sf.DefaultDrawingOptions, Theme.MapTram, 7f, tkDefaultPointSymbol.dpsCircle));
+                _kyHieuTram.Add((sf.Categories.get_Item(0).DrawingOptions, Theme.MapBenXe, 11f, tkDefaultPointSymbol.dpsSquare));
+                _kyHieuTram.Add((sf.Categories.get_Item(1).DrawingOptions, Theme.MapTramDeXuat, 10f, tkDefaultPointSymbol.dpsCircle));
+                _kyHieuTram.Add((sf.Categories.get_Item(2).DrawingOptions, Theme.MapTramNgung, 7f, tkDefaultPointSymbol.dpsCircle));
+                _coKyHieuTram = -1;
+                CapNhatKyHieuTram(true);
             });
+        }
+
+        // ---- Bản đồ nền ----
+        // MapWinGIS 4.9 chỉ tải tile qua http, còn máy chủ OSM nay chỉ phục vụ https và một số mạng không phân giải được
+        // openstreetmap.org (nhà cung cấp OSM có sẵn của MapWinGIS ⇒ trắng nền). CARTO đòi API key.
+        // ⇒ App chạy MayChuNenCucBo (127.0.0.1) lấy tile https: kiểu HOT (OSM Pháp – nhãn tiếng Việt một dòng, màu dịu,
+        //   hợp làm nền GIS), dự phòng bằng OSM chuẩn của OSM Đức.
+        private const int IdNenOsm = 2021, IdNenOsmGoc = 2022; // khác id thử CARTO cũ để không dùng nhầm đệm của MapWinGIS
+        private static readonly string[] NguonHot =
+        {
+            "https://a.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png", "https://b.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png",
+            "https://tile.openstreetmap.de/{z}/{x}/{y}.png",
+        };
+        private static readonly string[] NguonChuan =
+        {
+            "https://tile.openstreetmap.de/{z}/{x}/{y}.png", "https://a.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png",
+        };
+        // Esri World Light Gray Canvas: nền xám nhạt rất ít chi tiết (chuẩn làm nền bản đồ chuyên đề) + lớp nhãn riêng;
+        // Esri World Street Map: bản đồ phố đầy đủ nhưng màu dịu hơn OSM. Thứ tự ô của Esri là {z}/{y}/{x}.
+        private const int IdNenEsriXam = 2023, IdNenEsriPho = 2024;
+        private static readonly string[] NguonEsriXam =
+        {
+            "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+            "https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+        };
+        private static readonly string[] NhanEsriXam =
+        {
+            "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}",
+            "https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}",
+        };
+        private static readonly string[] NguonEsriPho =
+        {
+            "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
+            "https://services.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
+        };
+        private static MayChuNenCucBo _mayChuNhat, _mayChuGoc, _mayChuEsriXam, _mayChuEsriPho;
+
+        /// <summary>Các nền chọn được (khoá App.config / lựa chọn người dùng, tên hiển thị).</summary>
+        public static readonly (string khoa, string ten)[] CacNen =
+        {
+            ("EsriXam", "Esri xám nhạt"), ("EsriPho", "Esri đường phố"), ("OSM", "OSM nhạt"), ("OSMChuan", "OSM chuẩn"), ("None", "Không nền"),
+        };
+
+        /// <summary>Khoá nền đang dùng.</summary>
+        public string NenHienTai { get; private set; } = "";
+
+        /// <summary>Chú thích bản quyền của nền đang dùng (hiện ở thanh trạng thái).</summary>
+        public string BanQuyenNen { get; private set; } = "";
+
+        /// <summary>
+        /// Chọn bản đồ nền theo App.config &lt;add key="NenBanDo"&gt;: OSM (mặc định – kiểu HOT làm nhạt nhẹ),
+        /// OSMChuan (kiểu OSM chuẩn, màu gốc), OpenStreetMap (nhà cung cấp có sẵn của MapWinGIS, http – thường không tải được), None.
+        /// </summary>
+        public void DatNenBanDo(string nen)
+        {
+            nen = string.IsNullOrWhiteSpace(nen) ? "EsriXam" : nen.Trim();
+            NenHienTai = nen;
+            if (nen.StartsWith("Esri", StringComparison.OrdinalIgnoreCase))
+            {
+                bool pho = nen.Equals("EsriPho", StringComparison.OrdinalIgnoreCase);
+                NenHienTai = pho ? "EsriPho" : "EsriXam";
+                try
+                {
+                    var mc = pho ? (_mayChuEsriPho ?? (_mayChuEsriPho = new MayChuNenCucBo(NguonEsriPho, "esri_pho", 0.85f)))
+                                 : (_mayChuEsriXam ?? (_mayChuEsriXam = new MayChuNenCucBo(NguonEsriXam, "esri_xam", 1f, NhanEsriXam)));
+                    int idEsri = pho ? IdNenEsriPho : IdNenEsriXam;
+                    var dsEsri = Map.Tiles.Providers;
+                    if (dsEsri.get_IndexByProviderId(idEsri) < 0)
+                        dsEsri.Add(idEsri, pho ? "Esri World Street Map" : "Esri World Light Gray", mc.UrlChoMapWinGis, tkTileProjection.SphericalMercator, 0, pho ? 19 : 16);
+                    Map.Tiles.ProviderId = idEsri;
+                    BanQuyenNen = "Nền: Esri, HERE, Garmin, © OpenStreetMap contributors";
+                    Map.Redraw();
+                    return;
+                }
+                catch
+                {
+                    nen = "OSM";
+                    NenHienTai = nen;
+                }
+            }
+            if (nen.Equals("None", StringComparison.OrdinalIgnoreCase))
+            {
+                Map.TileProvider = tkTileProvider.ProviderNone;
+                BanQuyenNen = "";
+                return;
+            }
+            if (nen.Equals("OpenStreetMap", StringComparison.OrdinalIgnoreCase))
+            {
+                Map.TileProvider = tkTileProvider.OpenStreetMap;
+                BanQuyenNen = "Nền: © OpenStreetMap contributors";
+                return;
+            }
+            bool goc = nen.Equals("OSMChuan", StringComparison.OrdinalIgnoreCase);
+            int id = goc ? IdNenOsmGoc : IdNenOsm;
+            try
+            {
+                MayChuNenCucBo mc;
+                if (goc) mc = _mayChuGoc ?? (_mayChuGoc = new MayChuNenCucBo(NguonChuan, "osm_chuan", 1f));
+                else mc = _mayChuNhat ?? (_mayChuNhat = new MayChuNenCucBo(NguonHot, "osm_hot_nhat", 0.7f));
+                var ds = Map.Tiles.Providers;
+                if (ds.get_IndexByProviderId(id) < 0)
+                    ds.Add(id, goc ? "OpenStreetMap" : "OpenStreetMap HOT", mc.UrlChoMapWinGis, tkTileProjection.SphericalMercator, 0, 19);
+                Map.Tiles.ProviderId = id;
+                BanQuyenNen = "Nền: © OpenStreetMap contributors";
+                Map.Redraw();
+            }
+            catch
+            {
+                // không mở được cổng cục bộ (hiếm) – quay về nhà cung cấp có sẵn
+                Map.TileProvider = tkTileProvider.OpenStreetMap;
+                BanQuyenNen = "Nền: © OpenStreetMap contributors";
+            }
         }
 
         private static void KieuDiem(ShapeDrawingOptions o, Color mau, float coDiem, tkDefaultPointSymbol kieu)
@@ -140,6 +269,110 @@ namespace XeBus_GIS.Map
             o.LineColor = Theme.Ole(Color.White);
             o.LineWidth = 1f;
             o.LineVisible = true;
+        }
+
+        // ---- Ký hiệu trạm hình xe buýt theo tỷ lệ ----
+        private readonly List<(ShapeDrawingOptions o, Color mau, float coCham, tkDefaultPointSymbol hinh)> _kyHieuTram =
+            new List<(ShapeDrawingOptions, Color, float, tkDefaultPointSymbol)>();
+        private int _coKyHieuTram = -1;
+
+        // ---- Ký hiệu công trình theo loại + tỷ lệ ----
+        private readonly List<(ShapeDrawingOptions o, Color mau, string glyph)> _kyHieuCt =
+            new List<(ShapeDrawingOptions, Color, string)>();
+        private int _coKyHieuCt = -1;
+
+        /// <summary>
+        /// Ký hiệu lớp công trình: thu nhỏ (> 1:60.000) = chấm màu nhóm; phóng to = hình tròn có icon theo loại 15 → 24 px.
+        /// Trả true nếu đã đổi (cần vẽ lại).
+        /// </summary>
+        private bool CapNhatKyHieuCongTrinh(bool batBuoc)
+        {
+            if (_kyHieuCt.Count == 0) return false;
+            int co = KyHieuTram.CoCongTrinhTheoTyLe(Map.CurrentScale);
+            if (co == _coKyHieuCt && !batBuoc) return false;
+            _coKyHieuCt = co;
+            foreach (var (o, mau, glyph) in _kyHieuCt)
+            {
+                MapWinGIS.Image anh = co > 0 ? KyHieuTram.Anh(mau, Color.White, co, glyph, tron: true) : null;
+                if (anh == null)
+                {
+                    o.PointType = tkPointSymbolType.ptSymbolStandard;
+                    KieuDiem(o, mau, 6, tkDefaultPointSymbol.dpsCircle);
+                }
+                else
+                {
+                    o.PointType = tkPointSymbolType.ptSymbolPicture;
+                    o.Picture = anh;
+                    o.PictureScaleX = o.PictureScaleY = 1;
+                }
+            }
+            if (_lop.TryGetValue(CongTrinh, out var l) && l.Sf != null)
+            {
+                // công trình đang chọn: vòng vàng viền đậm (ký hiệu chọn dùng chung cho mọi loại)
+                var sel = l.Sf.SelectionDrawingOptions;
+                sel.PointType = tkPointSymbolType.ptSymbolStandard;
+                KieuDiem(sel, Theme.MapChon, co > 0 ? co + UiHelper.Dp(6) : 13, tkDefaultPointSymbol.dpsCircle);
+                sel.LineColor = Theme.Ole(Theme.Primary);
+                sel.LineWidth = 2;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Dung sai click chọn (mét) – theo cỡ ký hiệu trạm đang hiển thị để click lên biểu tượng là trúng
+        /// (tối thiểu 10 px).
+        /// </summary>
+        public double DungSaiChonM()
+        {
+            int px = Math.Max(UiHelper.Dp(10), KyHieuTram.CoTheoTyLe(Map.CurrentScale) / 2 + UiHelper.Dp(4));
+            return MetTrenPixel() * px;
+        }
+
+        /// <summary>
+        /// Đổi ký hiệu lớp trạm theo tỷ lệ hiện tại: toàn thành phố = chấm (tránh chồng chéo), phóng to dần = biểu tượng
+        /// xe buýt 14 → 30 px (KyHieuTram). Chỉ đổi khi sang bậc cỡ khác; trả true nếu đã đổi (cần vẽ lại).
+        /// </summary>
+        private bool CapNhatKyHieuTram(bool batBuoc)
+        {
+            if (_kyHieuTram.Count == 0) return false;
+            int co = KyHieuTram.CoTheoTyLe(Map.CurrentScale);
+            if (co == _coKyHieuTram && !batBuoc) return false;
+            _coKyHieuTram = co;
+            foreach (var (o, mau, coCham, hinh) in _kyHieuTram)
+            {
+                MapWinGIS.Image anh = co > 0 ? KyHieuTram.Anh(mau, Color.White, co) : null;
+                if (anh == null)
+                {
+                    o.PointType = tkPointSymbolType.ptSymbolStandard;
+                    KieuDiem(o, mau, coCham, hinh);
+                }
+                else
+                {
+                    o.PointType = tkPointSymbolType.ptSymbolPicture;
+                    o.Picture = anh;
+                    o.PictureScaleX = o.PictureScaleY = 1;
+                }
+            }
+            // trạm đang chọn: cùng hình, nền vàng, lớn hơn một chút
+            if (_lop.TryGetValue(Tram, out var l) && l.Sf != null)
+            {
+                var sel = l.Sf.SelectionDrawingOptions;
+                var anhChon = co > 0 ? KyHieuTram.Anh(Theme.MapChon, Theme.Primary, co + UiHelper.Dp(6)) : null;
+                if (anhChon == null)
+                {
+                    sel.PointType = tkPointSymbolType.ptSymbolStandard;
+                    KieuDiem(sel, Theme.MapChon, 13, tkDefaultPointSymbol.dpsCircle);
+                    sel.LineColor = Theme.Ole(Theme.Primary);
+                    sel.LineWidth = 2;
+                }
+                else
+                {
+                    sel.PointType = tkPointSymbolType.ptSymbolPicture;
+                    sel.Picture = anhChon;
+                    sel.PictureScaleX = sel.PictureScaleY = 1;
+                }
+            }
+            return true;
         }
 
         private static void ThemLoaiDiem(Shapefile sf, string ten, string kieu, Color mau, float coDiem, tkDefaultPointSymbol hinh)
@@ -331,6 +564,33 @@ namespace XeBus_GIS.Map
                 cat.DrawingOptions.FillTransparency = doDuc;
                 cat.DrawingOptions.LineColor = Theme.Ole(Color.White);
                 cat.DrawingOptions.LineWidth = 1;
+            }
+        };
+
+        /// <summary>Phân lớp màu cho lớp tạm đường (polyline): cột "kieu" = "0".."n-1" ứng với mau[i], nét rộng rong px.</summary>
+        public static Action<Shapefile> KieuDuongPhanLop(Color[] mau, float rong = 5) => sf =>
+        {
+            var o = sf.DefaultDrawingOptions;
+            o.LineColor = Theme.Ole(Theme.MapDuong);
+            o.LineWidth = rong;
+            for (int i = 0; i < mau.Length; i++)
+            {
+                var cat = sf.Categories.Add("Lớp " + i);
+                cat.Expression = "[kieu] = \"" + i + "\"";
+                cat.DrawingOptions.LineColor = Theme.Ole(mau[i]);
+                cat.DrawingOptions.LineWidth = rong;
+            }
+        };
+
+        /// <summary>Phân lớp màu cho lớp tạm điểm: cột "kieu" = "0".."n-1" ứng với mau[i].</summary>
+        public static Action<Shapefile> KieuDiemPhanLop(Color[] mau, float coDiem = 11) => sf =>
+        {
+            KieuDiem(sf.DefaultDrawingOptions, Theme.MapDuong, coDiem, tkDefaultPointSymbol.dpsCircle);
+            for (int i = 0; i < mau.Length; i++)
+            {
+                var cat = sf.Categories.Add("Lớp " + i);
+                cat.Expression = "[kieu] = \"" + i + "\"";
+                KieuDiem(cat.DrawingOptions, mau[i], coDiem, tkDefaultPointSymbol.dpsCircle);
             }
         };
 

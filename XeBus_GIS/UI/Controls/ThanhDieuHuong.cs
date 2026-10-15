@@ -64,6 +64,14 @@ namespace XeBus_GIS.UI.Controls
             _timer.Tick += Tick;
         }
 
+        /// <summary>Màu nền luôn lấy từ Theme.Sidebar – ẩn khỏi Designer để VS không ghi cứng màu vào FrmMain.Designer.cs.</summary>
+        [System.ComponentModel.Browsable(false), System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
+        public override Color BackColor
+        {
+            get => base.BackColor;
+            set => base.BackColor = value;
+        }
+
         public IList<MucDieuHuong> CacMuc => _muc;
 
         public MucDieuHuong Them(string khoa, string ten, string icon, string nhom = null)
