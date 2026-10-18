@@ -17,6 +17,7 @@ namespace XeBus_GIS.UI
         public const string KhoaViTri = "vitri";          // "phuong:<mã>" | "toado:<vĩ độ>,<kinh độ>" (do người dùng chọn/nhập)
         public const string KhoaViTriThoiTiet = "vitri_thoitiet"; // "1" = cho dùng vị trí đã chọn để lấy thời tiết
         public const string KhoaRongPanelPhai = "rong_panel_phai";
+        public const string KhoaTenDangNhap = "ten_dn_nho";  // tên đăng nhập khi người dùng chọn "Ghi nhớ" (KHÔNG lưu mật khẩu)
 
         public static string ThuMuc => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "XeBus_GIS");
         private static string Tep => Path.Combine(ThuMuc, "caidat.txt");

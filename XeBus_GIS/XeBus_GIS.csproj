@@ -158,9 +158,12 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="UI\Controls\ThanhDieuHuong.cs" />
-    <Compile Include="UI\Controls\NenVideo.cs">
-      <SubType>Component</SubType>
-    </Compile>
+    <Compile Include="UI\DangNhap\HieuUng.cs" />
+    <Compile Include="UI\DangNhap\WpfKit.cs" />
+    <Compile Include="UI\DangNhap\FormDangNhap.cs" />
+    <Compile Include="UI\DangNhap\FormDangKy.cs" />
+    <Compile Include="UI\DangNhap\ManThanhCong.cs" />
+    <Compile Include="UI\DangNhap\TrangDangNhap.cs" />
     <Compile Include="UI\Controls\PanelLopBanDo.cs" />
     <Compile Include="UI\Controls\KhungChuGiai.cs">
       <SubType>Component</SubType>
@@ -170,12 +173,6 @@
     </Compile>
     <Compile Include="UI\Controls\ThanhBuoc.cs">
       <SubType>Component</SubType>
-    </Compile>
-    <Compile Include="Forms\UcDangKy.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="Forms\UcDangKy.Designer.cs">
-      <DependentUpon>UcDangKy.cs</DependentUpon>
     </Compile>
     <Compile Include="Forms\FrmDangNhap.cs">
       <SubType>Form</SubType>
