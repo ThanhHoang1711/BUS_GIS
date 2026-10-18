@@ -15,6 +15,7 @@ namespace XeBus_GIS.Forms
     public partial class FrmDangNhap : Form
     {
         private readonly TrangDangNhap _trang;
+        private readonly System.Windows.Forms.Integration.ElementHost _host;
         private bool _daXong;
 
         public FrmDangNhap()
@@ -24,10 +25,16 @@ namespace XeBus_GIS.Forms
             BackColor = Theme.Surface;
             ThemeManager.TieuDeToi(this);
 
+            // ElementHost tạo trong code (không đặt trong Designer: VS Designer không nạp được kiểu WPF này)
             _trang = new TrangDangNhap();
-            host.BackColorTransparent = false;
-            host.BackColor = Theme.Surface;
-            host.Child = _trang;
+            _host = new System.Windows.Forms.Integration.ElementHost
+            {
+                Dock = DockStyle.Fill,
+                BackColorTransparent = false,
+                BackColor = Theme.Surface,
+                Child = _trang,
+            };
+            Controls.Add(_host);
             _trang.NapVideo(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "nen_dangnhap.mp4"));
 
             // nghiệp vụ cho các form WPF
