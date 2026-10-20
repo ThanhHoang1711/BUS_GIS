@@ -201,3 +201,6 @@ $RECYCLE.BIN/
 # -------------------------------------------------------------------
 __pycache__/
 *.py[cod]
+
+# Tài nguyên CC0 cho Blender (tải bằng tools/blender/tai_tai_nguyen.py, ~400 MB)
+tools/blender/assets/

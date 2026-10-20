@@ -73,7 +73,7 @@ namespace XeBus_GIS.UI.DangNhap
                 IsHitTestVisible = false,
             });
 
-            _noiDungTrai.Margin = new Thickness(56, 40, 56, 32);
+            _noiDungTrai.Margin = new Thickness(56, 40, 56, 48);
             _noiDungTrai.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             _noiDungTrai.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
             _noiDungTrai.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
@@ -116,17 +116,9 @@ namespace XeBus_GIS.UI.DangNhap
             Grid.SetRow(gioiThieu, 2);
             _noiDungTrai.Children.Add(gioiThieu);
 
-            var nguon = MauDn.Chu_("Video: mô hình 3D dựng bằng Blender từ dữ liệu CSDLKG · © OpenStreetMap contributors · tài nguyên CC0 Poly Haven",
-                                   12, FontWeights.Normal, Color.FromArgb(0xA6, 0xFF, 0xFF, 0xFF));
-            nguon.TextWrapping = TextWrapping.NoWrap;
-            nguon.TextTrimming = TextTrimming.CharacterEllipsis;
-            nguon.Margin = new Thickness(0, 32, 0, 0);
-            nguon.Opacity = 0;
-            Grid.SetRow(nguon, 3);
-            _noiDungTrai.Children.Add(nguon);
             _trai.Children.Add(_noiDungTrai);
             Children.Add(_trai);
-            _vaoTrai = new UIElement[] { logo, _tieuDe, _moTa, _hangSo, nguon };
+            _vaoTrai = new UIElement[] { logo, _tieuDe, _moTa, _hangSo };
 
             // ------------------------------------------------------------ cột phải: thẻ form
             var phai = new Grid { Background = new SolidColorBrush(MauDn.Nen) };
@@ -149,7 +141,7 @@ namespace XeBus_GIS.UI.DangNhap
 
             var chan = new StackPanel { Margin = new Thickness(24, 0, 24, 22) };
             chan.Children.Add(_pill);
-            var banQuyen = MauDn.Chu_("XeBus GIS · Nhóm 5 · Dữ liệu © OpenStreetMap contributors", 12, FontWeights.Normal, MauDn.ChuPhu);
+            var banQuyen = MauDn.Chu_("XeBus GIS · Hệ thống quản lý trạm xe buýt Hà Nội", 12, FontWeights.Normal, MauDn.ChuPhu);
             banQuyen.HorizontalAlignment = HorizontalAlignment.Center;
             banQuyen.Margin = new Thickness(0, 10, 0, 0);
             chan.Children.Add(banQuyen);
@@ -189,7 +181,7 @@ namespace XeBus_GIS.UI.DangNhap
             _tieuDe.FontSize = vua ? 34 : 42;
             _tieuDe.LineHeight = vua ? 41 : 50;
             _moTa.FontSize = vua ? 15.5 : 17;
-            _noiDungTrai.Margin = vua ? new Thickness(40, 32, 40, 26) : new Thickness(56, 40, 56, 32);
+            _noiDungTrai.Margin = vua ? new Thickness(40, 32, 40, 36) : new Thickness(56, 40, 56, 48);
         }
 
         // ------------------------------------------------------------------ hiệu ứng vào trang
