@@ -12,7 +12,7 @@ namespace XeBus_GIS.UI.DangNhap
 {
     /// <summary>
     /// Trang đăng nhập / đăng ký (toàn bộ là WPF dựng bằng code, đặt trong ElementHost của FrmDangNhap):
-    ///  • trái (~60%): video nền lặp (Blender – tools/blender) + lớp phủ than chì + giới thiệu + số liệu thật đếm lên;
+    ///  • trái (~60%): video nền lặp (Assets/nen_dangnhap.mp4) + lớp phủ than chì + giới thiệu + số liệu thật đếm lên;
     ///  • phải: thẻ form – Đăng nhập ⇄ Đăng ký ⇄ Đã gửi đăng ký chuyển bằng trượt ngang + mờ dần (280 ms).
     /// Cửa sổ hẹp (&lt; 960 DIP) ⇒ ẩn cột video. WPF tự co giãn theo DPI; diễn hoạt chạy trên GPU.
     /// </summary>
