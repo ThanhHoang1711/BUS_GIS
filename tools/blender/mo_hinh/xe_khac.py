@@ -5,7 +5,7 @@ import bpy
 from mathutils import Matrix
 from . import vat_lieu as vl
 
-MAU_XE_CON = ["#F2F2F0", "#1C1E21", "#9DA3A8", "#8B1E1E", "#2B4C7E", "#E8E4DA", "#4A4F55", "#C7C9CB"]
+MAU_XE_CON = ["#F2F2F0", "#3B4754","#9DA3A8", "#8B1E1E", "#2B4C7E", "#E8E4DA", "#4A4F55", "#C7C9CB"]
 MAU_AO = ["#2F3A4A", "#7A2E2E", "#3F5B3A", "#D9D4C7", "#1F2937", "#5B4A7A", "#B5651D"]
 MAU_MU = ["#E53935", "#FBC02D", "#FFFFFF", "#1E88E5", "#212121", "#43A047"]
 
@@ -21,9 +21,9 @@ def _hop(bm, x0, x1, y0, y1, z0, z1, mat, vat=0.0):
         bmesh.ops.bevel(bm, geom=list({e for v in m["verts"] for e in v.link_edges}), offset=vat, segments=2, affect="EDGES")
 
 
-def _banh(bm, x, y, r, w, mat):
+def _banh(bm, x, y, r, w, mat, z=None):
     m = bmesh.ops.create_cone(bm, cap_ends=True, segments=16, radius1=r, radius2=r, depth=w)
-    bmesh.ops.transform(bm, verts=m["verts"], matrix=Matrix.Translation((x, y, r)) @ Matrix.Rotation(math.pi / 2, 4, "X"))
+    bmesh.ops.transform(bm, verts=m["verts"], matrix=Matrix.Translation((x, y, r if z is None else z)) @ Matrix.Rotation(math.pi / 2, 4, "X"))
     for v in m["verts"]:
         for f in v.link_faces:
             f.material_index = mat
@@ -41,9 +41,9 @@ def _obj(ten, bm, mats):
 
 # biên dạng thân xe (x dọc xe, z cao) – điểm đầu là mũi xe dưới, đi ngược chiều kim đồng hồ khi nhìn từ bên phải
 BIEN_DANG = {
-    "sedan": [(2.3, 0.32), (2.34, 0.62), (2.2, 0.78), (1.0, 0.92), (0.15, 1.38), (-0.9, 1.4), (-1.65, 1.0),
-              (-2.25, 0.92), (-2.32, 0.6), (-2.28, 0.32)],
-    "suv": [(2.25, 0.38), (2.3, 0.72), (2.12, 0.92), (1.2, 1.02), (0.55, 1.62), (-1.95, 1.66), (-2.2, 1.3),
+    "sedan": [(2.3, 0.32), (2.34, 0.62), (2.2, 0.8), (0.95, 0.88), (0.1, 1.4), (-0.85, 1.42), (-1.7, 0.94),
+              (-2.25, 0.9), (-2.32, 0.6), (-2.28, 0.32)],
+    "suv": [(2.25, 0.38), (2.3, 0.72), (2.12, 0.95), (1.15, 1.05), (0.45, 1.65), (-1.8, 1.68), (-2.18, 1.12),
             (-2.25, 0.72), (-2.2, 0.38)],
 }
 # cạnh kính (cạnh i → i+1 của biên dạng): kính chắn gió = 3, kính hậu = 5; điểm 3/4/5/6 = chân kính trước / nóc trước /
@@ -84,14 +84,26 @@ def xe_con(ten, mau, kieu="sedan"):
         q = [(xa, yb, zb), (xb, yb, zb), (xb_t, yt, zt), (xa_t, yt, zt)]
         f = bm.faces.new([bm.verts.new(p) for p in (q if s > 0 else q[::-1])])
         f.material_index = 1
+        # cột B (màu thân) chia kính trước / sau, nhô ra thêm 0,6 cm
+        xm = (xa + xb) / 2 + 0.1
+        yb2, yt2 = s * (W2 + 0.018), s * (W2 - 0.12 + 0.018)
+        q = [(xm - 0.05, yb2, zb - 0.01), (xm + 0.05, yb2, zb - 0.01), (xm + 0.05 - (zt - zb) * 0.15, yt2, zt + 0.01),
+             (xm - 0.05 - (zt - zb) * 0.15, yt2, zt + 0.01)]
+        bm.faces.new([bm.verts.new(p) for p in (q if s > 0 else q[::-1])]).material_index = 0
     # đèn
     for s in (-1, 1):
         for x, z0, z1, mi in ((bd[0][0] + 0.05, 0.6, 0.72, 4), (bd[-1][0] - 0.05, 0.62, 0.78, 3)):
             q = [(x, s * 0.55 - 0.18, z0), (x, s * 0.55 + 0.18, z0), (x, s * 0.55 + 0.18, z1), (x, s * 0.55 - 0.18, z1)]
             bm.faces.new([bm.verts.new(p) for p in q]).material_index = mi
+    # cản trước / sau (nhựa tối) + biển số sau
+    _hop(bm, bd[0][0] - 0.08, bd[0][0] + 0.06, -W2 + 0.04, W2 - 0.04, 0.26, 0.46, 5, vat=0.03)
+    _hop(bm, bd[-1][0] - 0.06, bd[-1][0] + 0.08, -W2 + 0.04, W2 - 0.04, 0.26, 0.46, 5, vat=0.03)
+    _hop(bm, bd[-1][0] - 0.075, bd[-1][0] - 0.05, -0.26, 0.26, 0.48, 0.6, 4)
     for x in (-1.45, 1.42):
         for s in (-1, 1):
             _banh(bm, x, s * 0.8, 0.33, 0.24, 2)
+            _banh(bm, x, s * 0.925, 0.2, 0.012, 6, z=0.33)      # vành bạc ở mặt ngoài lốp
+    mats.append(vl.don_gian("XeVanh", "#B8BCC0", nham=0.3, kim_loai=1.0))
     return _obj(ten, bm, mats)
 
 

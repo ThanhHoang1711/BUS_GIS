@@ -120,6 +120,23 @@ def nha(ds, ten="Nha", vat_tren_mai=2200):
     O_CUA = 3.2
     from mathutils import Matrix
 
+    def mau_hinh(tao):
+        """Hình mẫu dựng 1 lần → (toạ độ đỉnh, chỉ số mặt). bmesh.ops trên bm_mai đang lớn dần tốn O(cả lưới) mỗi lần gọi."""
+        b = bmesh.new()
+        tao(b)
+        b.verts.index_update()
+        kq = ([v.co.copy() for v in b.verts], [[v.index for v in f.verts] for f in b.faces])
+        b.free()
+        return kq
+
+    MH_BON = mau_hinh(lambda b: bmesh.ops.create_cone(b, cap_ends=True, segments=14, radius1=0.55, radius2=0.55, depth=1.6))
+    MH_TUM = mau_hinh(lambda b: bmesh.ops.create_cube(b, size=1))
+
+    def chep(mh, M, vat):
+        ds_v = [bm_mai.verts.new(M @ co) for co in mh[0]]
+        for f in mh[1]:
+            bm_mai.faces.new([ds_v[i] for i in f]).material_index = vat
+
     def chon_mau(r):
         x = r.uniform(0, tong_tr)
         for hx, w in MAU_NHA:
@@ -189,16 +206,10 @@ def nha(ds, ten="Nha", vat_tren_mai=2200):
         if not mai_doc and t <= 7 and abs(dien_tich(pts)) > 30 and math.hypot(cx, cy) < vat_tren_mai:
             for k in range(r.choice([0, 1, 1, 2])):
                 px, py = cx + r.uniform(-1.5, 1.5), cy + r.uniform(-1.5, 1.5)
-                g = bmesh.ops.create_cone(bm_mai, cap_ends=True, segments=14, radius1=0.55, radius2=0.55, depth=1.6)
-                bmesh.ops.transform(bm_mai, verts=g["verts"], matrix=Matrix.Translation((px, py, Z_VIAHE + h + 0.85)) @
-                                    Matrix.Rotation(r.uniform(0, math.pi), 4, "Z") @ Matrix.Rotation(math.pi / 2, 4, "Y"))
+                chep(MH_BON, Matrix.Translation((px, py, Z_VIAHE + h + 0.85)) @
+                     Matrix.Rotation(r.uniform(0, math.pi), 4, "Z") @ Matrix.Rotation(math.pi / 2, 4, "Y"), 0)
             if r.random() < 0.45:
-                g = bmesh.ops.create_cube(bm_mai, size=1)
-                bmesh.ops.transform(bm_mai, verts=g["verts"],
-                                    matrix=Matrix.Translation((cx - 1.0, cy + 0.8, Z_VIAHE + h + 1.25)) @ Matrix.Diagonal((2.4, 2.4, 2.5, 1)))
-                for v in g["verts"]:
-                    for fc in v.link_faces:
-                        fc.material_index = 1
+                chep(MH_TUM, Matrix.Translation((cx - 1.0, cy + 0.8, Z_VIAHE + h + 1.25)) @ Matrix.Diagonal((2.4, 2.4, 2.5, 1)), 1)
     me = bpy.data.meshes.new(ten)
     bm.to_mesh(me)
     bm.free()

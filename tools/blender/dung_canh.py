@@ -131,7 +131,7 @@ for ma, g in DL.get("tuyen") or []:
         giao_thong.dong_xe("Buyt_%s_b" % ma, lech(list(reversed(p)), -3.0), col_b, khoang=360, v=9.0, z=thanh_pho.Z_DUONG, hat=8)
         ban_do.dai_tuyen("Tuyen_" + ma, p, mau, f_an=900, f_het=950)
 ban_do.dai_tuyen("Tuyen_02", [tuyen_buyt.pl[0]] + pl, MAU_TUYEN["M02"], f_ve=290, f_xong=330, f_an=900, f_het=950)
-ban_do.ghim_tram([tuple(t) for t in DL.get("tram") or []], f_dau=330, f_an=900)
+ban_do.ghim_tram([tuple(t) for t in DL.get("tram") or []], f_dau=330, f_an=900, bo_qua=(bd["matram"],))   # trạm mở đầu nằm ngay dưới máy quay
 moc_tg("dong xe + ban do")
 
 # ---------------------------------------------------------------- máy quay

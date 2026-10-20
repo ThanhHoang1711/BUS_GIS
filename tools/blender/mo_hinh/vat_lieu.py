@@ -308,7 +308,7 @@ def mat_tien_nha():
     l.new(toan("MULTIPLY", seed, 97.0), ghep.inputs[2])
     l.new(ghep.outputs[0], whash.inputs["Vector"])
     r_o = whash.outputs["Value"]
-    mau_kinh = tron(toan("GREATER_THAN", r_o, 0.72), hex_rgb("#1E2A31"), hex_rgb("#C9BFA8"))          # rèm
+    mau_kinh = tron(toan("GREATER_THAN", r_o, 0.85), hex_rgb("#1E2A31"), hex_rgb("#C9BFA8"))          # rèm
     mau_kinh = tron(toan("MULTIPLY", toan("GREATER_THAN", r_o, 0.9), toan("GREATER_THAN", seed, 0.6)), mau_kinh, hex_rgb("#4F7A62"))  # cửa chớp xanh
     # tường: màu nhà × vết bẩn
     nz = n.new("ShaderNodeTexNoise")

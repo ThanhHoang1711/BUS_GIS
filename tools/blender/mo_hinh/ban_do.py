@@ -9,6 +9,8 @@ from mathutils import Matrix
 from . import vat_lieu as vl
 from .thanh_pho import dai
 
+DO_DUC = 0.85     # dải tuyến hơi trong – thấy vạch kẻ đường bên dưới
+
 
 def _vat_lieu_tuyen(ten, mau, dai_m, f_ve, f_xong, f_an, f_het):
     """Principled màu tuyến × Transparent theo (u < tiến độ) × độ hiện – tiến độ & độ hiện có keyframe."""
@@ -46,13 +48,13 @@ def _vat_lieu_tuyen(ten, mau, dai_m, f_ve, f_xong, f_an, f_het):
     for f, gt in ((1, 0.0), (f_ve, 0.0), (f_xong, dai_m + 5)):
         tien.outputs[0].default_value = gt
         tien.outputs[0].keyframe_insert("default_value", frame=f)
-    for f, gt in ((1, 1.0), (f_an, 1.0), (f_het, 0.0)):
+    for f, gt in ((1, DO_DUC), (f_an, DO_DUC), (f_het, 0.0)):
         hien.outputs[0].default_value = gt
         hien.outputs[0].keyframe_insert("default_value", frame=f)
     return m
 
 
-def dai_tuyen(ten, pl, mau, f_ve=300, f_xong=360, f_an=498, f_het=522, rong=4.0, z=0.21):
+def dai_tuyen(ten, pl, mau, f_ve=300, f_xong=360, f_an=498, f_het=522, rong=3.0, z=0.21):
     bm = bmesh.new()
     uv = bm.loops.layers.uv.new("UVMap")
     dai(bm, pl, -rong / 2, rong / 2, z, uv)
@@ -66,17 +68,21 @@ def dai_tuyen(ten, pl, mau, f_ve=300, f_xong=360, f_an=498, f_het=522, rong=4.0,
     return o
 
 
-def ghim_tram(ds_tram, f_dau=300, f_an=496, ban_kinh=1800):
-    """Ghim trạm: thân mảnh + đầu tròn (than chì + vòng trắng), mọc lên theo khoảng cách tới tâm."""
-    m_dau = vl.don_gian("GhimDau", "#111827", nham=0.35)
-    m_vong = vl.don_gian("GhimVong", "#FFFFFF", nham=0.4)
+def ghim_tram(ds_tram, f_dau=300, f_an=496, ban_kinh=1800, bo_qua=()):
+    """Ghim trạm: thân mảnh than chì + đầu tròn trắng có vòng teal (màu trạm trong app), mọc lên theo khoảng cách tới tâm."""
+    m_dau = vl.don_gian("GhimDau", "#F8FAFC", nham=0.3, phat=0.35, mau_phat="#FFFFFF")
+    m_vong = vl.don_gian("GhimVong", "#0F766E", nham=0.35)
+    m_than = vl.don_gian("GhimThan", "#1F2937", nham=0.5)
     bm = bmesh.new()
-    c = bmesh.ops.create_cone(bm, cap_ends=True, segments=10, radius1=0.12, radius2=0.6, depth=30.0)
-    bmesh.ops.translate(bm, verts=c["verts"], vec=(0, 0, 15.0))
-    s = bmesh.ops.create_uvsphere(bm, u_segments=24, v_segments=14, radius=3.3)
-    bmesh.ops.translate(bm, verts=s["verts"], vec=(0, 0, 32.5))
-    r = bmesh.ops.create_cone(bm, cap_ends=True, segments=24, radius1=1.5, radius2=1.5, depth=6.9)
-    bmesh.ops.transform(bm, verts=r["verts"], matrix=Matrix.Translation((0, 0, 32.5)) @ Matrix.Rotation(math.pi / 2, 4, "X"))
+    c = bmesh.ops.create_cone(bm, cap_ends=True, segments=10, radius1=0.18, radius2=0.9, depth=44.0)
+    bmesh.ops.translate(bm, verts=c["verts"], vec=(0, 0, 22.0))
+    for v in c["verts"]:
+        for f in v.link_faces:
+            f.material_index = 2
+    s = bmesh.ops.create_uvsphere(bm, u_segments=24, v_segments=14, radius=5.0)
+    bmesh.ops.translate(bm, verts=s["verts"], vec=(0, 0, 48.0))
+    r = bmesh.ops.create_cone(bm, cap_ends=True, segments=32, radius1=5.25, radius2=5.25, depth=2.2)
+    bmesh.ops.translate(bm, verts=r["verts"], vec=(0, 0, 48.0))
     for v in r["verts"]:
         for f in v.link_faces:
             f.material_index = 1
@@ -85,10 +91,11 @@ def ghim_tram(ds_tram, f_dau=300, f_an=496, ban_kinh=1800):
     bm.free()
     me.materials.append(m_dau)
     me.materials.append(m_vong)
+    me.materials.append(m_than)
     ds = []
     for ma, x, y in ds_tram:
         kc = math.hypot(x, y)
-        if kc > ban_kinh:
+        if kc > ban_kinh or ma in bo_qua:
             continue
         o = bpy.data.objects.new("Ghim_" + ma, me)
         bpy.context.scene.collection.objects.link(o)
